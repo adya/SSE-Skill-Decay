@@ -1,0 +1,28 @@
+name: Main
+
+on:
+  push:
+    tags:
+    - '[0-9]+.[0-9]+.[0-9]+'
+    - '[0-9]+.[0-9]+.[0-9]+.rc[0-9]+'
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    uses: adya/pack-skse-mod/.github/workflows/pack.yml@main
+    with:
+      CMAKE_SE_BUILD_PRESET: 'vs2022-windows-vcpkg-se'
+      CMAKE_AE_BUILD_PRESET: 'vs2022-windows-vcpkg-ae'
+      CMAKE_VR_CONFIG_PRESET: ''
+      CMAKE_VR_BUILD_PRESET: ''
+      FOMOD_INCLUDE_PDB: true
+      FOMOD_MOD_NAME: "Skill Decay"
+      FOMOD_MOD_AUTHOR: "sasnikol"
+      FOMOD_MOD_NEXUS_ID: "170596"
+      FOMOD_DEFAULT_IMAGE: "FOMOD/images/cover.png"
+      FOMOD_SE_MIN_GAME_VERSION: '1.5'
+      FOMOD_AE_MIN_GAME_VERSION: '1.6'
+      VCPKG_COMMIT_ID: 'b545373a9a536dc559dac8583467a21497a0e897'

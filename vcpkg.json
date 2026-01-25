@@ -1,0 +1,14 @@
+{
+  "name": "skill-decay",
+  "version-string": "1.0.0",
+  "description": "A framework that allows swapping legendary skill trees",
+  "homepage": "https://github.com/adya/Skill-Decay",
+  "license": "MIT",
+  "builtin-baseline": "b545373a9a536dc559dac8583467a21497a0e897",
+  "dependencies": [
+    "boost-stl-interfaces",
+    "rsm-binary-io",
+    "spdlog",
+    "xbyak"
+  ]
+}
