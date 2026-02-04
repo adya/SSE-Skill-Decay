@@ -1,4 +1,5 @@
 #include "Hooks.h"
+#include "DecayTracker.h"
 
 void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 {
@@ -13,6 +14,10 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 	case SKSE::MessagingInterface::kPreLoadGame:
 		break;
 	case SKSE::MessagingInterface::kPostLoadGame:
+		Decay::DecayTracker::GetInstance().LoadSettings();
+		break;
+	case SKSE::MessagingInterface::kNewGame:
+		Decay::DecayTracker::GetInstance().LoadSettings();
 		break;
 	default:
 		break;

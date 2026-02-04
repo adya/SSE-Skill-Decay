@@ -2,39 +2,70 @@
 
 namespace Decay::Settings
 {
-	inline float fEnchantingSkillCostBase()
+	inline int iAVDSkillStart()
 	{
 		auto settings = RE::GameSettingCollection::GetSingleton();
-		if (auto setting = settings->GetSetting("fEnchantingSkillCostBase")) {
-			return setting->data.f;
+		if (auto setting = settings->GetSetting("iAVDSkillStart")) {
+			return setting->data.i;
 		}
-		return 0.005f;
+		return 15;
 	}
 
-	inline float fEnchantingSkillCostScale()
+	inline float fSkillUseCurve()
 	{
 		auto settings = RE::GameSettingCollection::GetSingleton();
-		if (auto setting = settings->GetSetting("fEnchantingSkillCostScale")) {
+		if (auto setting = settings->GetSetting("fSkillUseCurve")) {
 			return setting->data.f;
 		}
-		return 0.5f;
+		return 1.95f;
+	}
+}
+
+namespace Decay::Settings
+{
+
+	inline float fDifficultyMult()
+	{
+		// TODO: Replace with actual configurable value if needed
+		// Should support "auto" where the value is taken from the game's difficulty setting
+		return 1.0f;
 	}
 
-	inline float fEnchantingSkillCostMult()
+	inline float fDecayTrackerRate() 
 	{
-		auto settings = RE::GameSettingCollection::GetSingleton();
-		if (auto setting = settings->GetSetting("fEnchantingSkillCostMult")) {
-			return setting->data.f;
-		}
-		return 3.0f;
+		// TODO: Replace with actual configurable value if needed
+		return 1.0f;
 	}
 
-	inline float fEnchantingCostExponent()
+	/// Returns the number of in-game hours before skill decay starts
+	inline float fDecayGracePeriodHours(Skill skill)
 	{
-		auto settings = RE::GameSettingCollection::GetSingleton();
-		if (auto setting = settings->GetSetting("fEnchantingCostExponent")) {
-			return setting->data.f;
-		}
-		return 1.1f;
+		// TODO: Replace with actual configurable value if needed
+		return 24.0f;
+	}
+
+	/// Returns the number of in-game hours it takes to fully apply single decay step.
+	inline float fDecayIntervalHours(Skill skill)
+	{
+		// TODO: Replace with actual configurable value if needed
+		return 24.0f;
+	}
+
+	inline int iDecayLevelOffset(Skill skill)
+	{
+		// TODO: Replace with actual configurable value if needed
+		return 0;
+	}
+
+	inline int iMaxRaceBonus()
+	{
+		// TODO: Replace with actual configurable value if needed
+		return 10;
+	}
+
+	inline float fDecayXPMult(Skill skill)
+	{
+		// TODO: Replace with actual configurable value if needed
+		return 1.0f;
 	}
 }
