@@ -6,16 +6,9 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 	switch (a_message->type) {
 	case SKSE::MessagingInterface::kPostLoad:
 		Decay::Install();
-		break;
-	case SKSE::MessagingInterface::kPostPostLoad:
-		break;
-	case SKSE::MessagingInterface::kDataLoaded:
-		break;
-	case SKSE::MessagingInterface::kPreLoadGame:
+		Decay::DecayTracker::Register();
 		break;
 	case SKSE::MessagingInterface::kPostLoadGame:
-		Decay::DecayTracker::GetInstance().LoadSettings();
-		break;
 	case SKSE::MessagingInterface::kNewGame:
 		Decay::DecayTracker::GetInstance().LoadSettings();
 		break;

@@ -3,26 +3,24 @@
 
 namespace Decay
 {
-	using SkillData = RE::PlayerCharacter::PlayerSkills::Data::SkillData;
-	using Skill = RE::PlayerCharacter::PlayerSkills::Data::Skill;
-
 	struct SkillUsage
 	{
 		void Init(Skill skill);
+		void Revert();
 
 		/// Checks whether this SkillUsage has received at least one SetUsed() call.
 		bool IsInitialized() const;
 
-		bool WasUsed(const SkillData& skillData) const;
-		void SetUsed(const SkillData& skillData, const RE::Calendar* calendar);
+		bool WasUsed() const;
+		void SetUsed(const RE::Calendar* calendar);
 
 		bool IsStale(const RE::Calendar* calendar) const;
 
 		void MarkDecaying(const RE::Calendar* calendar);
 		bool IsDecaying() const { return isDecaying; }
-		void Decay(SkillData&, const RE::Calendar*);
+		void Decay( const RE::Calendar*);
 
-		
+		int GetStartingLevel() const { return baselineLevel + raceSkillBonus; }
 
 	private:
 		Skill skill = Skill::kTotal;  // unless loaded properly, this SkillUsage is invalid and should not be used.
@@ -65,6 +63,10 @@ namespace Decay
 		int GetDecayTargetLevel() const;
 
 		float CalculateLevelThresholdXP(int level) const;
+
+
+		friend bool Write(SKSE::SerializationInterface*, const SkillUsage&);
+		friend bool Read(SKSE::SerializationInterface*, SkillUsage&);
 	};
 
 }

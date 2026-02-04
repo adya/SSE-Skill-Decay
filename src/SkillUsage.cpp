@@ -10,12 +10,16 @@ namespace Decay
 	void SkillUsage::Init(Skill skill)
 	{
 		this->skill = skill;
-		decayInterval = Settings::fDecayIntervalHours(skill);
 		decayGracePeriod = Settings::fDecayGracePeriodHours(skill);
+		decayInterval = Settings::fDecayIntervalHours(skill);
 		baselineLevel = Settings::iAVDSkillStart();
 		baselineLevelBonus = Settings::iMaxRaceBonus();
 
-		for (const auto& boost : RE::PlayerCharacter::GetSingleton()->GetRace()->data.skillBoosts) {
+		decayLevelOffset = Settings::iDecayLevelOffset(skill);
+		decayXPMult = Settings::fDecayXPMult(skill);
+
+		raceSkillBonus = 0; // default to 0, in case there is value from previous race (when changing races through RaceMenu)
+		for (const auto& boost : Player->GetRace()->data.skillBoosts) {
 			const auto skillIndex = boost.skill.underlying() - 6;
 			if (skillIndex >= 0 && skillIndex < Skill::kTotal) {
 				if (static_cast<Skill>(skillIndex) == skill) {
@@ -24,9 +28,15 @@ namespace Decay
 				}
 			}
 		}
+	}
 
-		decayLevelOffset = Settings::iDecayLevelOffset(skill);
-		decayXPMult = Settings::fDecayXPMult(skill);
+	void SkillUsage::Revert()
+	{
+		daysPassedWhenLastUsed = 0;
+		lastKnownLevel = -1;
+		lastKnownXP = -1;
+		isDecaying = false;
+		daysPassedSinceLastDecay = 0;
 	}
 
 	bool SkillUsage::IsInitialized() const
@@ -34,15 +44,17 @@ namespace Decay
 		return lastKnownLevel >= 0 && lastKnownXP >= 0;
 	}	
 
-	bool SkillUsage::WasUsed(const SkillData& skillData) const
+	bool SkillUsage::WasUsed() const
 	{
-		return skillData.level > lastKnownLevel || ((skillData.xp - lastKnownXP) > 0.5f);  // 0.5f to make sure that we only count proper XP gains (at least +1)
+		auto level = Player->GetBaseActorValue(AV(skill));
+		auto& skillData = Player->skills->data->skills[skill];
+		return level > lastKnownLevel || ((skillData.xp - lastKnownXP) > 0.5f);  // 0.5f to make sure that we only count proper XP gains (at least +1)
 	}
 
-	void SkillUsage::SetUsed(const SkillData& skillData, const RE::Calendar* calendar)
+	void SkillUsage::SetUsed(const RE::Calendar* calendar)
 	{
-		lastKnownLevel = skillData.level;
-		lastKnownXP = skillData.xp;
+		lastKnownLevel = Player->GetBaseActorValue(AV(skill));
+		lastKnownXP = Player->skills->data->skills[skill].xp;
 		daysPassedWhenLastUsed = calendar->GetDaysPassed();
 		isDecaying = false;
 	}
@@ -63,9 +75,11 @@ namespace Decay
 		daysPassedSinceLastDecay = calendar->GetDaysPassed();
 	}
 
-	void SkillUsage::Decay(SkillData& skillData, const RE::Calendar* calendar)
+	void SkillUsage::Decay(const RE::Calendar* calendar)
 	{
 		assert(isDecaying);
+
+		auto& skillData = Player->skills->data->skills[skill];
 
 		const float daysPassed = calendar->GetDaysPassed();
 		const auto  hoursPassed = (daysPassed - daysPassedSinceLastDecay) * 24.0f;
@@ -76,7 +90,7 @@ namespace Decay
 
 		DecaySkill(av, skillData, decayXP);
 
-		lastKnownLevel = skillData.level;
+		lastKnownLevel = Player->GetBaseActorValue(AV(skill));
 		lastKnownXP = skillData.xp;
 		daysPassedSinceLastDecay = daysPassed;
 	}
@@ -86,15 +100,13 @@ namespace Decay
 		if (decayXPAmount <= 0.0f)
 			return;
 
-		auto player = RE::PlayerCharacter::GetSingleton();
-
-		float level = player->GetBaseActorValue(av);
+		float level = Player->GetBaseActorValue(av);
 		
 		if (skillData.xp >= decayXPAmount) {
 			skillData.xp -= decayXPAmount;
 			decayXPAmount = 0.0f;
-		} else if (baselineLevel + raceSkillBonus >= level) {
-			// We can't decay any further, so  just reset XP.
+		} else if (level <= GetStartingLevel()) {
+			// We can't decay any further, so just reset XP.
 			skillData.xp = 0.0f;
 			decayXPAmount = 0.0f;
 		} else {
@@ -102,7 +114,7 @@ namespace Decay
 			const float threshold = CalculateLevelThresholdXP(static_cast<int>(level));
 			skillData.xp = max(0, threshold - 1);  // -1 to be safe, so that we won't end up in invalid state where xp == levelThreshold.
 			skillData.levelThreshold = threshold;
-			player->ModBaseActorValue(av, -1);
+			Player->ModBaseActorValue(av, -1);
 			// skillData.level is only updated after player confirms level up (in Skills Menu).
 			// Before that, skillData.level will remain at the last confirmed level, even if GetBaseAV's level is further.
 			if (level == skillData.level) {

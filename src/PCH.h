@@ -18,3 +18,11 @@ using namespace std::literals;
 #endif
 
 #include "Version.h"
+
+
+using SkillData = RE::PlayerCharacter::PlayerSkills::Data::SkillData;
+using Skill = RE::PlayerCharacter::PlayerSkills::Data::Skill;
+
+#define Player RE::PlayerCharacter::GetSingleton()
+#define AV(skill) static_cast<RE::ActorValue>(skill + 6)
+#define SkillName(skill) RE::ActorValueList::GetActorValueName(AV(skill))
