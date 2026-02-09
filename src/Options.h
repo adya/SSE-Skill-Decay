@@ -21,51 +21,31 @@ namespace Decay::Settings
 	}
 }
 
-namespace Decay::Settings
+namespace Decay::Options
 {
-
-	inline float fDifficultyMult()
+	struct SkillDecay
 	{
-		// TODO: Replace with actual configurable value if needed
-		// Should support "auto" where the value is taken from the game's difficulty setting
-		return 1.0f;
-	}
+		float gracePeriod = 24.0f;
+		float decayInterval = 24.0f;
 
-	inline float fDecayTrackerRate() 
-	{
-		// TODO: Replace with actual configurable value if needed
-		return 1.0f;
-	}
+		int decayLevelOffset = 0;
+		int maxRaceBonus = 10;
 
-	/// Returns the number of in-game hours before skill decay starts
-	inline float fDecayGracePeriodHours(Skill skill)
-	{
-		// TODO: Replace with actual configurable value if needed
-		return 24.0f;
-	}
+		/// Damping multiplier to the XP decay rate. Larger multiplier means slower decay.
+		/// Must be positive. Applied as a 1/decayXPDamping.
+		float decayXPDamping = 1.0f;
 
-	/// Returns the number of in-game hours it takes to fully apply single decay step.
-	inline float fDecayIntervalHours(Skill skill)
-	{
-		// TODO: Replace with actual configurable value if needed
-		return 24.0f;
-	}
+		/// Multiplier to the XP decay rate. Larger multiplier means faster decay.
+		/// Negative values represent the automatic scaling based on the game's difficulty setting. 
+		/// 0 disables decay for the skill.
+		float decayXPDifficultyMult = -0.0f;
 
-	inline int iDecayLevelOffset(Skill skill)
-	{
-		// TODO: Replace with actual configurable value if needed
-		return 0;
-	}
+		/// The lower cap for decay.
+		/// Positive values represent absolute minimum level that Skill can decay to.
+		/// Negative values represent a relative offset from the highest level achieved in this skill
+		/// 0 means no cap, the skill will decay to the baseline level with which the player started.
+		int decayCap = 0;
+	};
 
-	inline int iMaxRaceBonus()
-	{
-		// TODO: Replace with actual configurable value if needed
-		return 10;
-	}
-
-	inline float fDecayXPMult(Skill skill)
-	{
-		// TODO: Replace with actual configurable value if needed
-		return 1.0f;
-	}
+	void Load();
 }

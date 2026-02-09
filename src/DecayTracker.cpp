@@ -1,5 +1,6 @@
 #include "DecayTracker.h"
 #include "Options.h"
+#include "CLIBUtil/simpleINI.hpp"
 
 #define Inc(skill) \
 	skill = static_cast<Skill>(static_cast<std::underlying_type_t<Skill>>(skill) + 1)
@@ -11,7 +12,7 @@ namespace Decay
 		float daysPassed = calendar->GetDaysPassed();
 		float hoursPassed = (daysPassed - lastDaysPassed) * 24.0;
 
-		if (hoursPassed > Settings::fDecayTrackerRate()) {
+		if (hoursPassed > trackingRate) {
 			lastDaysPassed = daysPassed;
 			UpdateSkillUsage(calendar);
 		}
@@ -19,13 +20,96 @@ namespace Decay
 
 	void DecayTracker::LoadSettings()
 	{
+		logger::info("{:*^40}", "OPTIONS");
+		std::filesystem::path options = R"(Data\SKSE\Plugins\SkillDecay.ini)";
+		CSimpleIniA           ini{};
+		ini.SetUnicode();
+		ini.SetMultiKey(false);
+
+		// TODO: Apply built-in defaults for each skill.
+		DecayConfig configs[Skill::kTotal] = {
+			DecayConfig(),  // One-Handed
+			DecayConfig(),  // Two-Handed
+			DecayConfig(),  // Archery
+			DecayConfig(),  // Block
+			DecayConfig(),  // Smithing
+			DecayConfig(),  // Heavy Armor
+			DecayConfig(),  // Light Armor
+			DecayConfig(),  // Pickpocket
+			DecayConfig(),  // Lockpicking
+			DecayConfig(),  // Sneaking
+			DecayConfig(),  // Alchemy
+			DecayConfig(),  // Speech
+			DecayConfig(),  // Alteration
+			DecayConfig(),  // Conjuration
+			DecayConfig(),  // Destruction
+			DecayConfig(),  // Illusion
+			DecayConfig(),  // Restoration
+			DecayConfig()   // Enchanting
+		};
+
+		const std::string sections[Skill::kTotal] = {
+			"OneHanded",
+			"TwoHanded",
+			"Archery",
+			"Block",
+			"Smithing",
+			"HeavyArmor",
+			"LightArmor",
+			"Pickpocket",
+			"Lockpicking",
+			"Sneaking",
+			"Alchemy",
+			"Speech",
+			"Alteration",
+			"Conjuration",
+			"Destruction",
+			"Illusion",
+			"Restoration",
+			"Enchanting"
+		};
+
+		if (ini.LoadFile(options.string().c_str()) >= 0) {
+			for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
+				DecayConfig& config = configs[skill];
+				const char*  section = sections[skill].c_str();
+
+				// Load global overwrites for all skills first.
+				config.gracePeriod = ini.GetDoubleValue("", "fDecayGracePeriod", config.gracePeriod);
+				config.interval = ini.GetDoubleValue("", "fDecayInterval", config.interval);
+				config.levelOffset = ini.GetLongValue("", "iDecayLevelOffset", config.levelOffset);
+				config.baselineLevelOffset = ini.GetLongValue("", "iBaselineLevelOffset", config.baselineLevelOffset);
+				config.damping = ini.GetDoubleValue("", "fDecayXPDamping", config.damping);
+				config.difficultyMult = ini.GetDoubleValue("", "fDecayXPDifficultyMult", config.difficultyMult);
+				config.levelCap = ini.GetLongValue("", "iDecayLevelCap", config.levelCap);
+				config.legendarySkillDamping = ini.GetDoubleValue("", "fLegendarySkillXPDamping", config.legendarySkillDamping);
+
+				// Then apply skill-specific settings, if they exist.
+				if (ini.SectionExists(section)) {
+					config.gracePeriod = ini.GetDoubleValue(section, "fDecayGracePeriod", config.gracePeriod);
+					config.interval = ini.GetDoubleValue(section, "fDecayInterval", config.interval);
+					config.levelOffset = ini.GetLongValue(section, "iDecayLevelOffset", config.levelOffset);
+					config.baselineLevelOffset = ini.GetLongValue(section, "iBaselineLevelOffset", config.baselineLevelOffset);
+					config.damping = ini.GetDoubleValue(section, "fDecayXPDamping", config.damping);
+					config.difficultyMult = ini.GetDoubleValue(section, "fDecayXPDifficultyMult", config.difficultyMult);
+					config.levelCap = ini.GetLongValue(section, "iDecayLevelCap", config.levelCap);
+					config.legendarySkillDamping = ini.GetDoubleValue(section, "fLegendarySkillXPDamping", config.legendarySkillDamping);
+				}
+			}
+		} else {
+			logger::info(R"(Data\SKSE\Plugins\SkillDecay.ini not found. Default options will be used.)");
+			logger::info("");
+		}
+
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
-			skillUsages[skill].Init(skill);
+			skillUsages[skill].Init(skill, configs[skill]);
+			// TODO: Print loaded settings for each skill.
 		}
 	}
 
 	RE::BSEventNotifyControl DecayTracker::ProcessEvent(const RE::MenuOpenCloseEvent* event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*)
 	{
+		// We need to reload settings, specifically, Racial Skill Bonuses after RaceMenu is closed, since player might've changed race.
 		if (event->menuName == RE::RaceSexMenu::MENU_NAME && !event->opening) {
 			LoadSettings();
 		}

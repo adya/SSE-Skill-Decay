@@ -25,12 +25,12 @@ namespace Decay
 
 	private:
 
-		float lastDaysPassed;
+		/// Hours between SkillUsage updates.
+		float      trackingRate = 1.0f;
+		float      lastDaysPassed;
 		SkillUsage skillUsages[Skill::kTotal];
 
 		void UpdateSkillUsage(RE::Calendar*);
-
-		
 
 		static void Load(SKSE::SerializationInterface*);
 		static void Save(SKSE::SerializationInterface*);

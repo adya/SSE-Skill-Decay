@@ -7,24 +7,22 @@
 
 namespace Decay
 {
-	void SkillUsage::Init(Skill skill)
+	void SkillUsage::Init(Skill skill, DecayConfig& config)
 	{
 		this->skill = skill;
-		decayGracePeriod = Settings::fDecayGracePeriodHours(skill);
-		decayInterval = Settings::fDecayIntervalHours(skill);
+		this->decay = std::move(config);
+
 		baselineLevel = Settings::iAVDSkillStart();
-		baselineLevelBonus = Settings::iMaxRaceBonus();
+		raceSkillBonus = 0;
 
-		decayLevelOffset = Settings::iDecayLevelOffset(skill);
-		decayXPMult = Settings::fDecayXPMult(skill);
-
-		raceSkillBonus = 0; // default to 0, in case there is value from previous race (when changing races through RaceMenu)
 		for (const auto& boost : Player->GetRace()->data.skillBoosts) {
 			const auto skillIndex = boost.skill.underlying() - 6;
 			if (skillIndex >= 0 && skillIndex < Skill::kTotal) {
-				if (static_cast<Skill>(skillIndex) == skill) {
+				if (static_cast<Skill>(skillIndex) == skill && raceSkillBonus == 0) {
 					raceSkillBonus = boost.bonus;
-					break;
+				}
+				if (decay.baselineLevelOffset < 0 && boost.bonus > decay.baselineLevelOffset) {
+					decay.baselineLevelOffset = boost.bonus;
 				}
 			}
 		}
@@ -55,6 +53,14 @@ namespace Decay
 	{
 		lastKnownLevel = Player->GetBaseActorValue(AV(skill));
 		lastKnownXP = Player->skills->data->skills[skill].xp;
+		int legLevel = Player->skills->data->legendaryLevels[skill];
+		if (legLevel > lastKnownLegendaryLevel) {
+			lastKnownHighestLevel = GetStartingLevel();
+		} else {
+			lastKnownHighestLevel = max(lastKnownHighestLevel, lastKnownLevel);
+		}
+		lastKnownLegendaryLevel = legLevel;
+		
 		daysPassedWhenLastUsed = calendar->GetDaysPassed();
 		isDecaying = false;
 	}
@@ -66,7 +72,7 @@ namespace Decay
 			return false;
 
 		auto hoursPassed = (calendar->GetDaysPassed() - daysPassedWhenLastUsed) * 24.0f;
-		return hoursPassed >= decayInterval;
+		return hoursPassed >= decay.gracePeriod;
 	}
 
 	void SkillUsage::MarkDecaying(const RE::Calendar* calendar)
@@ -86,7 +92,12 @@ namespace Decay
 
 		const auto av = static_cast<RE::ActorValue>(skill + 6);
 
-		float decayXP = hoursPassed * CalculateLevelThresholdXP(GetDecayTargetLevel()) / decayInterval;
+		float timeDelta = hoursPassed / decay.interval;
+		
+		float legendaryDamping = max(1, 1 + (1 - decay.legendarySkillDamping) * Player->skills->data->legendaryLevels[skill]);
+
+		float mult = GetDifficultyMult() / (decay.damping * legendaryDamping);
+		float decayXP = CalculateLevelThresholdXP(GetDecayTargetLevel()) * mult * timeDelta;
 
 		DecaySkill(av, skillData, decayXP);
 
@@ -105,7 +116,7 @@ namespace Decay
 		if (skillData.xp >= decayXPAmount) {
 			skillData.xp -= decayXPAmount;
 			decayXPAmount = 0.0f;
-		} else if (level <= GetStartingLevel()) {
+		} else if (level <= GetDecayCapLevel()) {
 			// We can't decay any further, so just reset XP.
 			skillData.xp = 0.0f;
 			decayXPAmount = 0.0f;
@@ -123,11 +134,43 @@ namespace Decay
 			DecaySkill(av, skillData, decayXPAmount);
 		}
 	}
+
 	inline int SkillUsage::GetDecayTargetLevel() const
 	{
 		// Level 2 is the smallest we can go to avoid Decay XP equaling zero.
-		return max(2, baselineLevel + baselineLevelBonus - raceSkillBonus - decayLevelOffset);
+		return max(2, GetStartingLevel() - raceSkillBonus - decay.levelOffset);
 	}
+
+	inline float SkillUsage::GetDifficultyMult() const
+	{
+		constexpr float difficultyMults[] = {
+			0.5f,   // Novice
+			0.75f,  // Apprentice
+			1.0f,   // Adept
+			1.5f,   // Expert
+			2.0f,   // Master
+			3.0f    // Legendary
+		};
+		auto diffIndex = min(Player->difficulty, 5);
+
+		if (decay.difficultyMult < 0.0f) {
+			return difficultyMults[diffIndex];
+		} else {
+			return decay.difficultyMult;
+		}
+	}
+
+	inline int SkillUsage::GetDecayCapLevel() const
+	{
+		if (decay.levelCap > 0) {
+			return decay.levelCap;
+		} else if (decay.levelCap < 0) {
+			return max(GetStartingLevel(), lastKnownHighestLevel + decay.levelCap);
+		} else {
+			return GetStartingLevel();
+		}
+	}
+
 	inline float SkillUsage::CalculateLevelThresholdXP(int level) const
 	{
 		if (skill == Skill::kTotal)
