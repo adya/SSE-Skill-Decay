@@ -90,28 +90,36 @@ namespace Decay
 		const float daysPassed = calendar->GetDaysPassed();
 		const auto  hoursPassed = (daysPassed - daysPassedSinceLastDecay) * 24.0f;
 
-		const auto av = static_cast<RE::ActorValue>(skill + 6);
 
 		float timeDelta = hoursPassed / decay.interval;
 		
-		float legendaryDamping = max(1, 1 + (1 - decay.legendarySkillDamping) * Player->skills->data->legendaryLevels[skill]);
+		float legendaryDamping = max(1, 1 + (decay.legendarySkillDamping - 1) * Player->skills->data->legendaryLevels[skill]);
 
 		float mult = GetDifficultyMult() / (decay.damping * legendaryDamping);
-		float decayXP = CalculateLevelThresholdXP(GetDecayTargetLevel()) * mult * timeDelta;
+		float rawDecayXP = CalculateLevelThresholdXP(GetDecayTargetLevel());
+		float fullDecayXP = rawDecayXP * mult;
 
-		DecaySkill(av, skillData, decayXP);
+		// We calculate max XP that can be decayed, so that the decay rate won't exeed minDaysPerLevel (e.g. with minDaysPerLevel = 1, it would take at least 1 day to decay 1 level).
+		float maxDecayXP = rawDecayXP * decay.minDaysPerLevel;
+		// Similarly, we calculate min XP, so that the decay rate won't take ages to decay on higher levels.
+		float minDecayXP = rawDecayXP * decay.maxDaysPerLevel;
+		float clampedDecayXP = max(minDecayXP, min(maxDecayXP, fullDecayXP));
+
+		float decayXP = clampedDecayXP * timeDelta;
+		
+		DecaySkill(skillData, decayXP);
 
 		lastKnownLevel = Player->GetBaseActorValue(AV(skill));
 		lastKnownXP = skillData.xp;
 		daysPassedSinceLastDecay = daysPassed;
 	}
 
-	void SkillUsage::DecaySkill(RE::ActorValue av, SkillData& skillData, float& decayXPAmount)
+	void SkillUsage::DecaySkill(SkillData& skillData, float& decayXPAmount)
 	{
 		if (decayXPAmount <= 0.0f)
 			return;
 
-		float level = Player->GetBaseActorValue(av);
+		float level = Player->GetBaseActorValue(AV(skill));
 		
 		if (skillData.xp >= decayXPAmount) {
 			skillData.xp -= decayXPAmount;
@@ -125,20 +133,24 @@ namespace Decay
 			const float threshold = CalculateLevelThresholdXP(static_cast<int>(level));
 			skillData.xp = max(0, threshold - 1);  // -1 to be safe, so that we won't end up in invalid state where xp == levelThreshold.
 			skillData.levelThreshold = threshold;
-			Player->ModBaseActorValue(av, -1);
+			Player->ModBaseActorValue(AV(skill), -1);
 			// skillData.level is only updated after player confirms level up (in Skills Menu).
 			// Before that, skillData.level will remain at the last confirmed level, even if GetBaseAV's level is further.
 			if (level == skillData.level) {
 				skillData.level -= 1;
 			}
-			DecaySkill(av, skillData, decayXPAmount);
+			DecaySkill(skillData, decayXPAmount);
 		}
+	}
+
+	inline int SkillUsage::GetStartingLevel() const { 
+		return baselineLevel + raceSkillBonus; 
 	}
 
 	inline int SkillUsage::GetDecayTargetLevel() const
 	{
 		// Level 2 is the smallest we can go to avoid Decay XP equaling zero.
-		return max(2, GetStartingLevel() - raceSkillBonus - decay.levelOffset);
+		return max(2, baselineLevel + decay.baselineLevelOffset - raceSkillBonus - decay.levelOffset);
 	}
 
 	inline float SkillUsage::GetDifficultyMult() const
@@ -163,7 +175,8 @@ namespace Decay
 	inline int SkillUsage::GetDecayCapLevel() const
 	{
 		if (decay.levelCap > 0) {
-			return decay.levelCap;
+			float level = Player->GetBaseActorValue(AV(skill));
+			return level >= decay.levelCap ? decay.levelCap : GetStartingLevel();
 		} else if (decay.levelCap < 0) {
 			return max(GetStartingLevel(), lastKnownHighestLevel + decay.levelCap);
 		} else {

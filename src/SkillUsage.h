@@ -46,8 +46,16 @@ namespace Decay
 		/// 0 means no cap, the skill will decay to the baseline level with which the player started.
 		int levelCap = 0;
 
+		/// The smallest number of days it should take to decay a skill by 1 level.
+		/// This value is used to clamp maximum allowed decay XP, to prevent too rapid decays on smaller levels.
+		float minDaysPerLevel = 1.0f;
+
+		/// The largest number of days it should take to decay a skill by 1 level.
+		/// This value is used to clamp minimum allowed decay XP, to prevent too slow decays on higher levels.
+		float maxDaysPerLevel = 50.0f;
+
 		DecayConfig() = default;
-		DecayConfig(float gracePeriod, float interval, int baselineLevelOffset, int levelOffset, float difficultyMult, float damping, float legendarySkillDamping, int levelCap) :
+		DecayConfig(float damping, int levelOffset = 0, float difficultyMult = -0.0f, float legendarySkillDamping = 1.15f, int levelCap = 0, float gracePeriod = 24.0f, float interval = 24.0f, int baselineLevelOffset = -1) :
 			gracePeriod(gracePeriod),
 			interval(interval),
 			baselineLevelOffset(baselineLevelOffset),
@@ -76,7 +84,7 @@ namespace Decay
 		bool IsDecaying() const { return isDecaying; }
 		void Decay( const RE::Calendar*);
 
-		int GetStartingLevel() const { return baselineLevel + decay.baselineLevelOffset; }
+		int GetDecayCapLevel() const;
 
 	private:
 		Skill skill = Skill::kTotal;  // unless loaded properly, this SkillUsage is invalid and should not be used.
@@ -92,6 +100,9 @@ namespace Decay
 		/// Highest level achieved in this skill, used for relative decay cap when decayCap is negative.
 		int lastKnownHighestLevel = -1;
 
+		bool  isDecaying = false;
+		float daysPassedSinceLastDecay = 0;
+
 		/// Starting level of the skill.
 		int baselineLevel = 15;
 
@@ -100,17 +111,14 @@ namespace Decay
 		/// Also, used to prevent decaying below (baselineLevel + raceSkillBonus).
 		int raceSkillBonus = 0;
 
-		bool  isDecaying = false;
-		float daysPassedSinceLastDecay = 0;
-
 		DecayConfig decay;
 
 		/// Subtracts decayXPAmount recursively, decreasing skill level as needed.
-		void DecaySkill(RE::ActorValue, SkillData& skillData, float& decayXPAmount);
+		void DecaySkill(SkillData& skillData, float& decayXPAmount);
 
+		int   GetStartingLevel() const;
 		int GetDecayTargetLevel() const;
 		float GetDifficultyMult() const;
-		int   GetDecayCapLevel() const;
 
 		float CalculateLevelThresholdXP(int level) const;
 
