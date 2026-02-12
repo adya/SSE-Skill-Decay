@@ -71,6 +71,7 @@ namespace Decay
 		if (ini.LoadFile(options.string().c_str()) >= 0) {
 			float defaultTrackingRate = trackingRate;
 			trackingRate = ini.GetDoubleValue("", "fTrackingRate", trackingRate);
+			logSkillUsage = ini.GetBoolValue("", "bLogSkillUsage", logSkillUsage);
 			if (trackingRate <= 0) {
 				trackingRate = defaultTrackingRate;
 			}
@@ -138,6 +139,10 @@ namespace Decay
 			logger::info("");
 		}
 
+		logger::info("{}", logSkillUsage ? "Logging Skill Usage enabled" : "Logging Skill Usage disabled");
+		auto formattedRate = trackingRate < 1.0f ? std::format("{:.2f} in-game minutes", trackingRate * 60.0f) : std::format("{:.2f} in-game hours", trackingRate);
+		logger::info("Tracking Rate: once every {}", formattedRate);
+
 		logger::info("{:>11} | {:^12} | {:^14} | {:^15} | {:^12} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
 			"Skill", "Grace Period", "Decay Duration", "Baseline Offset", "Extra Offset", "Difficulty Mult", "Damping", "Legendary Damping", "Decay Cap", "Min Decay Days", "Max Decay Days");
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
@@ -173,15 +178,16 @@ namespace Decay
 	{
 		const std::string timestamp = std::format("{} {:.0f}:{}", calendar->GetDayName(), calendar->GetHour(), calendar->GetMinutes());
 
-		logger::info("{:*^65}", " Skill Data ");
-		logger::info("[{:^13}] {} | {:^11} | {:^11} | {:^9} | {:^8}", timestamp, "D", "Skill", "Level [Cap]", "Threshold", "XP");
+		if (logSkillUsage) {
+			logger::info("{:*^65}", " Skill Data ");
+			logger::info("[{:^13}] {} | {:^11} | {:^11} | {:^9} | {:^8}", timestamp, "D", "Skill", "Level [Cap]", "Threshold", "XP");
+		}
 
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
 			auto&       usage = skillUsages[skill];
 			const auto& skillData = Player->skills->data->skills[skill];
 
 			std::string decayStatus = "-";
-			
 
 			if (!usage.IsInitialized() || usage.WasUsed()) {
 				usage.SetUsed(calendar);
@@ -193,10 +199,14 @@ namespace Decay
 				usage.MarkDecaying(calendar);
 				decayStatus = "-";
 			}
-			std::string levelInfo = std::format("{:^3.0f}[{:^2}]", Player->GetBaseActorValue(AV(skill)), usage.GetDecayCapLevel());
-			logger::info("[{:^13}] {} | {:^11} | {:^11} | {:^9.2f} | {:^8.2f}", timestamp, decayStatus, SkillName(skill), levelInfo, skillData.levelThreshold, skillData.xp);
+			if (logSkillUsage) {
+				std::string levelInfo = std::format("{:^3.0f}[{:^2}]", Player->GetBaseActorValue(AV(skill)), usage.GetDecayCapLevel());
+				logger::info("[{:^13}] {} | {:^11} | {:^11} | {:^9.2f} | {:^8.2f}", timestamp, decayStatus, SkillName(skill), levelInfo, skillData.levelThreshold, skillData.xp);
+			}
 		}
-		logger::info("");
+		if (logSkillUsage) {
+			logger::info("");
+		}
 	}
 }
 
@@ -319,9 +329,14 @@ namespace Decay {
 	{
 		logger::info("{:*^30}", " SAVING ");
 
-		const auto& tracker = GetInstance();
+		auto& tracker = GetInstance();
+
+		// Before saving, we want to make sure that skill usage is at the most recent state.
+		// This avoid situations when player gains XP or levels up a skill and immediately saves. This would 
+		tracker.UpdateSkillUsage(RE::Calendar::GetSingleton());
 
 		for (Skill skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
+			
 			if (interface->OpenRecord(skillUsageRecordType, skillUsageVersion)) {
 				if (Write(interface, tracker[skill])) {
 					logger::info("Saved usage for {}", SkillName(skill));
