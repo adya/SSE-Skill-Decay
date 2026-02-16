@@ -3,7 +3,7 @@ Skill Decay
 
 </h1>
 
-![Splash](https://github.com/adya/SSE-Skill-Decay/blob/main/images/Splash.png)
+![Splash](https://github.com/adya/SSE-Skill-Decay/blob/main/images/splash.png)
 
 A mod that introduces decay for skills that Player doesn't actively use.
 
