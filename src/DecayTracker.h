@@ -38,7 +38,7 @@ namespace Decay
 	private:
 
 		/// Hours between SkillUsage updates.
-		float      trackingRate = 0.16f;
+		float      trackingRate = 0.016f;  // once every in-game minute by default
 		bool       logSkillUsage = false;
 		float      lastDaysPassed;
 		SkillUsage skillUsages[Skill::kTotal];
