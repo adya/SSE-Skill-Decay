@@ -1,6 +1,7 @@
 #include "DecayTracker.h"
 #include "Options.h"
 #include "CLIBUtil/simpleINI.hpp"
+#include "CLIBUtil/string.hpp"
 
 #define Inc(skill) \
 	skill = static_cast<Skill>(static_cast<std::underlying_type_t<Skill>>(skill) + 1)
@@ -18,6 +19,38 @@ namespace Decay
 		}
 	}
 
+	void ReadSettings(const CSimpleIniA& ini, const char* section, DecayConfig& config) 
+	{
+		if (ini.SectionExists(section)) {
+			config.gracePeriod = ini.GetDoubleValue(section, "fDecayGracePeriod", config.gracePeriod);
+			config.interval = ini.GetDoubleValue(section, "fDecayInterval", config.interval);
+			config.levelOffset = ini.GetLongValue(section, "iDecayLevelOffset", config.levelOffset);
+			config.baselineLevelOffset = ini.GetLongValue(section, "iBaselineLevelOffset", config.baselineLevelOffset);
+			config.damping = ini.GetDoubleValue(section, "fDecayXPDamping", config.damping);
+			config.difficultyMult = ini.GetDoubleValue(section, "fDecayXPDifficultyMult", config.difficultyMult);
+			config.levelCap = ini.GetLongValue(section, "iDecayLevelCap", config.levelCap);
+			config.legendarySkillDamping = ini.GetDoubleValue(section, "fLegendarySkillXPDamping", config.legendarySkillDamping);
+			config.minDaysPerLevel = ini.GetDoubleValue(section, "fMinDaysPerLevel", config.minDaysPerLevel);
+			config.maxDaysPerLevel = ini.GetDoubleValue(section, "fMaxDaysPerLevel", config.maxDaysPerLevel);
+
+			std::string color = ini.GetValue(section, "cTint", "");
+
+			if (!color.empty()) {
+				config.decayTint = clib_util::string::to_color(color.c_str(), config.decayTint);
+			}
+
+			std::string rawLayers = ini.GetValue(section, "sUILayers", "");
+			auto        layers = clib_util::string::split(rawLayers, ",");
+			for (auto& layer : layers) {
+				clib_util::string::trim(layer);
+			}
+
+			if (!layers.empty()) {
+				config.uiLayers = std::move(layers);
+			}
+		}
+	}
+
 	void DecayTracker::LoadSettings()
 	{
 		logger::info("{:*^30}", " OPTIONS ");
@@ -26,25 +59,47 @@ namespace Decay
 		ini.SetUnicode();
 		ini.SetMultiKey(false);
 
+		
+		// These are valid indices for instances present in each SkillText's ShortBar.
+		// SkillText0: 94-97 // Enchanting
+		// SkillText1: 100-103 // Smithing
+		// SkillText2: 106-109 // Heavy Armor
+		// SkillText3: 112-115 // Block
+		// SkillText4: 118-121 // Two-Handed
+		// SkillText5: 124-127 // One-Handed
+		// SkillText6: 130-133 // Archery
+		// SkillText7: 136-139 // Light Armor
+		// SkillText8: 142-145 // Sneaking
+		// SkillText9: 148-151 // Lockpicking
+		// SkillText10: 154-157 // Pickpocket
+		// SkillText11: 160-163 // Speech
+		// SkillText12: 166-169 // Alchemy
+		// SkillText13: 172-175 // Illusion
+		// SkillText14: 178-181 // Conjuration
+		// SkillText15: 184-187 // Destruction
+		// SkillText16: 190-193 // Restoration
+		// SkillText17: 196-199 // Alteration
+
+		// By default we target the primary color of the bar as well as the background. Other instances control "reflection" and "shadow" effects applied to the bar.
 		DecayConfig configs[Skill::kTotal] = {
-			DecayConfig(),      // One-Handed
-			DecayConfig(),      // Two-Handed
-			DecayConfig(),      // Archery
-			DecayConfig(),      // Block
-			DecayConfig(2),     // Smithing
-			DecayConfig(),      // Heavy Armor
-			DecayConfig(),      // Light Armor
-			DecayConfig(2),     // Pickpocket
-			DecayConfig(2),     // Lockpicking
-			DecayConfig(1.5f),  // Sneaking
-			DecayConfig(),      // Alchemy
-			DecayConfig(),      // Speech
-			DecayConfig(),      // Alteration
-			DecayConfig(),      // Conjuration
-			DecayConfig(),      // Destruction
-			DecayConfig(),      // Illusion
-			DecayConfig(),      // Restoration
-			DecayConfig(1.25f)  // Enchanting
+			/* One-Handed */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText5.ShortBar.instance124", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText5.ShortBar.instance126" }),
+			/* Two-Handed */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText4.ShortBar.instance118", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText4.ShortBar.instance120" }),
+			/* Archery */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText6.ShortBar.instance130", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText6.ShortBar.instance132" }),
+			/* Block */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText3.ShortBar.instance112", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText3.ShortBar.instance114" }),
+			/* Smithing */ DecayConfig(2, { "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText1.ShortBar.instance100", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText1.ShortBar.instance102" }),
+			/* Heavy Armor */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText2.ShortBar.instance106", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText2.ShortBar.instance108" }),
+			/* Light Armor */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText7.ShortBar.instance136", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText7.ShortBar.instance138" }),
+			/* Pickpocket */ DecayConfig(2, { "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText10.ShortBar.instance154", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText10.ShortBar.instance156" }),
+			/* Lockpicking */ DecayConfig(2, { "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText9.ShortBar.instance148", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText9.ShortBar.instance150" }),
+			/* Sneaking */ DecayConfig(1.5f, { "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText8.ShortBar.instance142", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText8.ShortBar.instance144" }),
+			/* Alchemy */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText12.ShortBar.instance166", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText12.ShortBar.instance168" }),
+			/* Speech */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText11.ShortBar.instance160", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText11.ShortBar.instance162" }),
+			/* Alteration */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText17.ShortBar.instance196", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText17.ShortBar.instance198" }),
+			/* Conjuration */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText14.ShortBar.instance178", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText14.ShortBar.instance180" }),
+			/* Destruction */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText15.ShortBar.instance184", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText15.ShortBar.instance186" }),
+			/* Illusion */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText13.ShortBar.instance172", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText13.ShortBar.instance174" }),
+			/* Restoration */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText16.ShortBar.instance190", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText16.ShortBar.instance192" }),
+			/* Enchanting */ DecayConfig(1.25f, { "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText0.ShortBar.instance94", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText0.ShortBar.instance96" })
 		};
 
 		const std::string sections[Skill::kTotal] = {
@@ -81,31 +136,19 @@ namespace Decay
 				DecayConfig  defaults = config;
 				const char*  section = sections[skill].c_str();
 
+				// We load settings in 3 passes:
+				// 1) Load default values for all the skills
+				// 2) Load skill-specific custom values
+				// 3) Load forced global values that all skills will use.
+
 				// Load global overwrites for all skills first.
-				config.gracePeriod = ini.GetDoubleValue("", "fDecayGracePeriod", config.gracePeriod);
-				config.interval = ini.GetDoubleValue("", "fDecayInterval", config.interval);
-				config.levelOffset = ini.GetLongValue("", "iDecayLevelOffset", config.levelOffset);
-				config.baselineLevelOffset = ini.GetLongValue("", "iBaselineLevelOffset", config.baselineLevelOffset);
-				config.damping = ini.GetDoubleValue("", "fDecayXPDamping", config.damping);
-				config.difficultyMult = ini.GetDoubleValue("", "fDecayXPDifficultyMult", config.difficultyMult);
-				config.levelCap = ini.GetLongValue("", "iDecayLevelCap", config.levelCap);
-				config.legendarySkillDamping = ini.GetDoubleValue("", "fLegendarySkillXPDamping", config.legendarySkillDamping);
-				config.minDaysPerLevel = ini.GetDoubleValue("", "fMinDaysPerLevel", config.minDaysPerLevel);
-				config.maxDaysPerLevel = ini.GetDoubleValue("", "fMaxDaysPerLevel", config.maxDaysPerLevel);
+				ReadSettings(ini, "", config);
 
 				// Then apply skill-specific settings, if they exist.
-				if (ini.SectionExists(section)) {
-					config.gracePeriod = ini.GetDoubleValue(section, "fDecayGracePeriod", config.gracePeriod);
-					config.interval = ini.GetDoubleValue(section, "fDecayInterval", config.interval);
-					config.levelOffset = ini.GetLongValue(section, "iDecayLevelOffset", config.levelOffset);
-					config.baselineLevelOffset = ini.GetLongValue(section, "iBaselineLevelOffset", config.baselineLevelOffset);
-					config.damping = ini.GetDoubleValue(section, "fDecayXPDamping", config.damping);
-					config.difficultyMult = ini.GetDoubleValue(section, "fDecayXPDifficultyMult", config.difficultyMult);
-					config.levelCap = ini.GetLongValue(section, "iDecayLevelCap", config.levelCap);
-					config.legendarySkillDamping = ini.GetDoubleValue(section, "fLegendarySkillXPDamping", config.legendarySkillDamping);
-					config.minDaysPerLevel = ini.GetDoubleValue(section, "fMinDaysPerLevel", config.minDaysPerLevel);
-					config.maxDaysPerLevel = ini.GetDoubleValue(section, "fMaxDaysPerLevel", config.maxDaysPerLevel);
-				}
+				ReadSettings(ini, section, config);
+
+				// Finally, apply another global overwrites that are supposed to affect all skills.
+				ReadSettings(ini, "All", config);
 
 				// Lastly we want to validate input
 				if (config.gracePeriod < 0) {
@@ -161,6 +204,30 @@ namespace Decay
 				std::format("{:.1f}d", configs[skill].minDaysPerLevel),
 				std::format("{:.1f}d", configs[skill].maxDaysPerLevel)
 			);
+		}
+	}
+
+	void DecayTracker::ApplyTint(RE::GFxMovieView* movie) const
+	{
+		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
+			const auto& usage = skillUsages[skill];
+			if (usage.IsDecaying()) {
+				const auto& config = usage.GetConfig();
+				auto        r = config.decayTint.colorData.channels.red;
+				auto        g = config.decayTint.colorData.channels.green;
+				auto        b = config.decayTint.colorData.channels.blue;
+				auto        a = config.decayTint.colorData.channels.alpha;
+				logger::info("Applying tint to {}:", SkillName(skill));
+				logger::info("    RGBA: ({}, {}, {}, {})", r, g, b, a);
+
+				for (const auto& path : config.uiLayers) {
+					if (movie->SetColorTint(path.c_str(), config.decayTint)) {
+						logger::info("    Layer: {}", path);
+					} else {
+						logger::warn("    Failed to apply tint to layer: {}", path);
+					}
+				}
+			}
 		}
 	}
 

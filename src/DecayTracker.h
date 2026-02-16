@@ -20,6 +20,18 @@ namespace Decay
 		void AdvanceTime(RE::Calendar* calendar);
 		void LoadSettings();
 
+		bool IsDecaying() const
+		{
+			for (const auto& usage : skillUsages) {
+				if (usage.IsDecaying()) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		void ApplyTint(RE::GFxMovieView*) const;
+
 	protected:
 		RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override;
 

@@ -54,8 +54,17 @@ namespace Decay
 		/// This value is used to clamp minimum allowed decay XP, to prevent too slow decays on higher levels.
 		float maxDaysPerLevel = 50.0f;
 
+		/// Paths to the skill level meter UI elements for each skill, used for applying color tint when decaying.
+		std::vector<std::string> uiLayers;
+
+		/// Color of the tint to be applied to the skill level meter UI elements when the skill is decaying.
+		RE::GColor decayTint = { 255, 60, 0, 200 };
+
 		DecayConfig() = default;
-		DecayConfig(float damping, int levelOffset = 0, float difficultyMult = -0.0f, float legendarySkillDamping = 1.15f, int levelCap = 0, float gracePeriod = 24.0f, float interval = 24.0f, int baselineLevelOffset = -1) :
+		DecayConfig(std::vector<std::string> layers) :
+			uiLayers(std::move(layers))
+		{}
+		DecayConfig(float damping, std::vector<std::string> layers, int levelOffset = 0, float difficultyMult = -0.0f, float legendarySkillDamping = 1.15f, int levelCap = 0, float gracePeriod = 24.0f, float interval = 24.0f, int baselineLevelOffset = -1) :
 			gracePeriod(gracePeriod),
 			interval(interval),
 			baselineLevelOffset(baselineLevelOffset),
@@ -63,7 +72,8 @@ namespace Decay
 			difficultyMult(difficultyMult),
 			damping(damping),
 			legendarySkillDamping(legendarySkillDamping),
-			levelCap(levelCap)
+			levelCap(levelCap),
+			uiLayers(std::move(layers))
 		{}
 	};
 
@@ -85,6 +95,8 @@ namespace Decay
 		void Decay( const RE::Calendar*);
 
 		int GetDecayCapLevel() const;
+
+		const DecayConfig& GetConfig() const { return decay; }
 
 	private:
 		Skill skill = Skill::kTotal;  // unless loaded properly, this SkillUsage is invalid and should not be used.
