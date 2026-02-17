@@ -36,13 +36,13 @@ namespace Decay
 			std::string color = ini.GetValue(section, "cDecayTint", "");
 
 			if (!color.empty()) {
-				config.decayTint = clib_util::string::to_color(color.c_str(), config.decayTint);
+				config.decayTint = clib_util::string::to_color(color, config.decayTint);
 			}
 
-			std::string color = ini.GetValue(section, "cTint", "");
+			color = ini.GetValue(section, "cTint", "");
 
 			if (!color.empty()) {
-				config.normalTint = clib_util::string::to_color(color.c_str(), config.normalTint);
+				config.normalTint = clib_util::string::to_color(color, config.normalTint);
 			}
 
 			std::string rawLayers = ini.GetValue(section, "sUILayers", "");
