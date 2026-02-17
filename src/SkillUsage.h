@@ -5,7 +5,7 @@ namespace Decay
 	struct DecayConfig
 	{
 		/// Time interval in hours before a skill is considered stale (starting to decay).
-		float gracePeriod = 24.0f;
+		float gracePeriod = 72.0f;
 
 		/// Time interval in hours that it takes to fully decay XP of GetDecayTargetLevel().
 		float interval = 24.0f;
@@ -54,7 +54,7 @@ namespace Decay
 
 		/// The largest number of days it should take to decay a skill by 1 level.
 		/// This value is used to clamp minimum allowed decay XP, to prevent too slow decays on higher levels.
-		float maxDaysPerLevel = 50.0f;
+		float maxDaysPerLevel = 14.0f;
 
 		/// Paths to the skill level meter UI elements for each skill, used for applying color tint when decaying.
 		std::vector<std::string> uiLayers;
