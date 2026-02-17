@@ -33,10 +33,16 @@ namespace Decay
 			config.minDaysPerLevel = ini.GetDoubleValue(section, "fMinDaysPerLevel", config.minDaysPerLevel);
 			config.maxDaysPerLevel = ini.GetDoubleValue(section, "fMaxDaysPerLevel", config.maxDaysPerLevel);
 
-			std::string color = ini.GetValue(section, "cTint", "");
+			std::string color = ini.GetValue(section, "cDecayTint", "");
 
 			if (!color.empty()) {
 				config.decayTint = clib_util::string::to_color(color.c_str(), config.decayTint);
+			}
+
+			std::string color = ini.GetValue(section, "cTint", "");
+
+			if (!color.empty()) {
+				config.normalTint = clib_util::string::to_color(color.c_str(), config.normalTint);
 			}
 
 			std::string rawLayers = ini.GetValue(section, "sUILayers", "");
@@ -211,12 +217,12 @@ namespace Decay
 	{
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
 			const auto& usage = skillUsages[skill];
+			const auto& config = usage.GetConfig();
 			if (usage.IsDecaying()) {
-				const auto& config = usage.GetConfig();
-				auto        r = config.decayTint.colorData.channels.red;
-				auto        g = config.decayTint.colorData.channels.green;
-				auto        b = config.decayTint.colorData.channels.blue;
-				auto        a = config.decayTint.colorData.channels.alpha;
+				//auto r = config.decayTint.colorData.channels.red;
+				//auto g = config.decayTint.colorData.channels.green;
+				//auto b = config.decayTint.colorData.channels.blue;
+				//auto a = config.decayTint.colorData.channels.alpha;
 				//logger::info("Applying tint to {}:", SkillName(skill));
 				//logger::info("    RGBA: ({}, {}, {}, {})", r, g, b, a);
 
@@ -227,6 +233,10 @@ namespace Decay
 					//} else {
 					//	logger::warn("    Failed to apply tint to layer: {}", path);
 					//}
+				}
+			} else if (config.normalTint.colorData.channels.alpha > 0) {
+				for (const auto& path : config.uiLayers) {
+					movie->SetColorTint(path.c_str(), config.normalTint);
 				}
 			}
 		}

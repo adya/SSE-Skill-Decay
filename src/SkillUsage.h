@@ -62,6 +62,10 @@ namespace Decay
 		/// Color of the tint to be applied to the skill level meter UI elements when the skill is decaying.
 		RE::GColor decayTint = { 255, 60, 0, 200 };
 
+		/// Color of the tint to be applied to the skill level meter UI elements when the skill is not decaying.
+		/// Provided just for fun if some people would like to recolor their skill meters.
+		RE::GColor normalTint = { 0, 0, 0, 0 };
+
 		DecayConfig() = default;
 		DecayConfig(std::vector<std::string> layers) :
 			uiLayers(std::move(layers))
