@@ -11,10 +11,10 @@ namespace Decay
 		float interval = 24.0f;
 
 		/// An offset to the baseline level, that is used to calculate decay rate.
-		/// 
+		///
 		/// Ideally, this value should correspond to the max racial skill bonus among skillBoosts provided by Player's race.
 		/// However, it can be customized for a skill, if needed.
-		/// 
+		///
 		/// Positive values represent custom racial bonus to the target decay level.
 		/// Negative values represent automatic value based on Player's racial skill bonuses.
 		/// 0 would mean that skill doesn't use racial skill bonus.
@@ -42,7 +42,7 @@ namespace Decay
 
 		/// The lower cap for decay.
 		/// Skill cannot decay below the starting level.
-		/// 
+		///
 		/// Positive values represent absolute minimum level that Skill can decay to.
 		/// Negative values represent a relative offset from the highest level achieved in this skill
 		/// 0 representes automatic scaling of level cap based on the difficulty.
@@ -98,7 +98,7 @@ namespace Decay
 
 		void MarkDecaying(const RE::Calendar* calendar);
 		bool IsDecaying() const;
-		void Decay( const RE::Calendar*);
+		void Decay(const RE::Calendar*);
 
 		int GetDecayCapLevel() const;
 
@@ -135,7 +135,7 @@ namespace Decay
 		void DecaySkill(SkillData& skillData, float& decayXPAmount);
 
 		int   GetStartingLevel() const;
-		int GetDecayTargetLevel() const;
+		int   GetDecayTargetLevel() const;
 		float GetDifficultyMult() const;
 
 		float CalculateLevelThresholdXP(int level) const;

@@ -19,7 +19,6 @@ using namespace std::literals;
 
 #include "Version.h"
 
-
 using SkillData = RE::PlayerCharacter::PlayerSkills::Data::SkillData;
 using Skill = RE::PlayerCharacter::PlayerSkills::Data::Skill;
 

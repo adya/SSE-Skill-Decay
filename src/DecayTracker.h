@@ -14,7 +14,7 @@ namespace Decay
 		}
 		static void Register();
 
-		SkillUsage& operator[](Skill skill) { return skillUsages[skill]; }
+		SkillUsage&       operator[](Skill skill) { return skillUsages[skill]; }
 		SkillUsage const& operator[](Skill skill) const { return skillUsages[skill]; }
 
 		void AdvanceTime(RE::Calendar* calendar);
@@ -36,7 +36,6 @@ namespace Decay
 		RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override;
 
 	private:
-
 		/// Hours between SkillUsage updates.
 		float      trackingRate = 0.016f;  // once every in-game minute by default
 		bool       logSkillUsage = false;

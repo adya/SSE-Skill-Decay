@@ -1,9 +1,9 @@
 #include "SkillUsage.h"
 #include "Options.h"
-#include <cassert>
-#include <algorithm>
 #include "RE/A/ActorValueList.h"
 #include "RE/P/PlayerCharacter.h"
+#include <algorithm>
+#include <cassert>
 
 namespace Decay
 {
@@ -40,11 +40,11 @@ namespace Decay
 	bool SkillUsage::IsInitialized() const
 	{
 		return lastKnownLevel >= 0 && lastKnownXP >= 0;
-	}	
+	}
 
 	bool SkillUsage::WasUsed() const
 	{
-		auto level = Player->GetBaseActorValue(AV(skill));
+		auto  level = Player->GetBaseActorValue(AV(skill));
 		auto& skillData = Player->skills->data->skills[skill];
 		return level > lastKnownLevel || ((skillData.xp - lastKnownXP) > 0.5f);  // 0.5f to make sure that we only count proper XP gains (at least +1)
 	}
@@ -60,7 +60,7 @@ namespace Decay
 			lastKnownHighestLevel = max(lastKnownHighestLevel, lastKnownLevel);
 		}
 		lastKnownLegendaryLevel = legLevel;
-		
+
 		daysPassedWhenLastUsed = calendar->GetDaysPassed();
 		isDecaying = false;
 	}
@@ -81,9 +81,9 @@ namespace Decay
 		daysPassedSinceLastDecay = calendar->GetDaysPassed();
 	}
 
-	bool SkillUsage::IsDecaying() const 
-	{ 
-		return isDecaying && Player->GetBaseActorValue(AV(skill)) > GetDecayCapLevel(); // If it can't decay any further, ignore the isDecaying flag.
+	bool SkillUsage::IsDecaying() const
+	{
+		return isDecaying && Player->GetBaseActorValue(AV(skill)) > GetDecayCapLevel();  // If it can't decay any further, ignore the isDecaying flag.
 	}
 
 	void SkillUsage::Decay(const RE::Calendar* calendar)
@@ -95,9 +95,8 @@ namespace Decay
 		const float daysPassed = calendar->GetDaysPassed();
 		const auto  hoursPassed = (daysPassed - daysPassedSinceLastDecay) * 24.0f;
 
-
 		float timeDelta = hoursPassed / decay.interval;
-		
+
 		float legendaryDamping = max(1, 1 + (decay.legendarySkillDamping - 1) * Player->skills->data->legendaryLevels[skill]);
 
 		float mult = GetDifficultyMult() / (decay.damping * legendaryDamping);
@@ -111,7 +110,7 @@ namespace Decay
 		float clampedDecayXP = max(minDecayXP, min(maxDecayXP, fullDecayXP));
 
 		float decayXP = clampedDecayXP * timeDelta;
-		
+
 		DecaySkill(skillData, decayXP);
 
 		lastKnownLevel = Player->GetBaseActorValue(AV(skill));
@@ -125,7 +124,7 @@ namespace Decay
 			return;
 
 		float level = Player->GetBaseActorValue(AV(skill));
-		
+
 		if (skillData.xp >= decayXPAmount) {
 			skillData.xp -= decayXPAmount;
 			decayXPAmount = 0.0f;
@@ -148,8 +147,9 @@ namespace Decay
 		}
 	}
 
-	inline int SkillUsage::GetStartingLevel() const { 
-		return baselineLevel + raceSkillBonus; 
+	inline int SkillUsage::GetStartingLevel() const
+	{
+		return baselineLevel + raceSkillBonus;
 	}
 
 	inline int SkillUsage::GetDecayTargetLevel() const

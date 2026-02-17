@@ -1,11 +1,11 @@
 #include "DecayTracker.h"
-#include "Options.h"
 #include "CLIBUtil/simpleINI.hpp"
 #include "CLIBUtil/string.hpp"
+#include "Options.h"
 
 #define Inc(skill) \
 	skill = static_cast<Skill>(static_cast<std::underlying_type_t<Skill>>(skill) + 1)
-	
+
 namespace Decay
 {
 	void DecayTracker::AdvanceTime(RE::Calendar* calendar)
@@ -19,7 +19,7 @@ namespace Decay
 		}
 	}
 
-	void ReadSettings(const CSimpleIniA& ini, const char* section, DecayConfig& config) 
+	void ReadSettings(const CSimpleIniA& ini, const char* section, DecayConfig& config)
 	{
 		if (ini.SectionExists(section)) {
 			config.gracePeriod = ini.GetDoubleValue(section, "fDecayGracePeriod", config.gracePeriod);
@@ -65,7 +65,6 @@ namespace Decay
 		ini.SetUnicode();
 		ini.SetMultiKey(false);
 
-		
 		// These are valid indices for instances present in each SkillText's ShortBar.
 		// SkillText0: 94-97 // Enchanting
 		// SkillText1: 100-103 // Smithing
@@ -208,8 +207,7 @@ namespace Decay
 				std::format("+{:.0f}%", (configs[skill].legendarySkillDamping - 1) * 100.0f),
 				configs[skill].levelCap == 0 ? "Base" : std::format("{}", configs[skill].levelCap),
 				std::format("{:.1f}d", configs[skill].minDaysPerLevel),
-				std::format("{:.1f}d", configs[skill].maxDaysPerLevel)
-			);
+				std::format("{:.1f}d", configs[skill].maxDaysPerLevel));
 		}
 	}
 
@@ -289,8 +287,9 @@ namespace Decay
 }
 
 // Serialization
-namespace Decay {
-	
+namespace Decay
+{
+
 	namespace details
 	{
 		template <typename T>
@@ -410,11 +409,10 @@ namespace Decay {
 		auto& tracker = GetInstance();
 
 		// Before saving, we want to make sure that skill usage is at the most recent state.
-		// This avoid situations when player gains XP or levels up a skill and immediately saves. This would 
+		// This avoid situations when player gains XP or levels up a skill and immediately saves. This would
 		tracker.UpdateSkillUsage(RE::Calendar::GetSingleton());
 
 		for (Skill skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
-			
 			if (interface->OpenRecord(skillUsageRecordType, skillUsageVersion)) {
 				if (Write(interface, tracker[skill])) {
 					logger::info("Saved usage for {}", SkillName(skill));

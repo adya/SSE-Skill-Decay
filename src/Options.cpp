@@ -28,7 +28,6 @@ namespace Decay::Options
 		ini.SetUnicode();
 		ini.SetMultiKey(false);
 		if (ini.LoadFile(options.string().c_str()) >= 0) {
-			
 		} else {
 			logger::info(R"(Data\SKSE\Plugins\SkillDecay.ini not found. Default options will be used.)");
 			logger::info("");
