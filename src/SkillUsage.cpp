@@ -160,17 +160,16 @@ namespace Decay
 
 	inline float SkillUsage::GetDifficultyMult() const
 	{
-		constexpr float difficultyMults[] = {
-			0.5f,   // Novice
-			0.75f,  // Apprentice
-			1.0f,   // Adept
-			1.5f,   // Expert
-			2.0f,   // Master
-			3.0f    // Legendary
-		};
-		auto diffIndex = min(Player->difficulty, 5);
-
 		if (decay.difficultyMult < 0.0f) {
+			constexpr float difficultyMults[] = {
+				0.5f,   // Novice
+				0.75f,  // Apprentice
+				1.0f,   // Adept
+				1.5f,   // Expert
+				2.0f,   // Master
+				3.0f    // Legendary
+			};
+			auto diffIndex = min(Player->difficulty, 5);
 			return difficultyMults[diffIndex];
 		} else {
 			return decay.difficultyMult;
@@ -179,11 +178,26 @@ namespace Decay
 
 	inline int SkillUsage::GetDecayCapLevel() const
 	{
-		if (decay.levelCap > 0) {
+		int effectivbeLevelCap = decay.levelCap;
+
+		if (effectivbeLevelCap == 0) {
+			constexpr int difficultyCaps[] = {
+				-5,   // Novice
+				-10,  // Apprentice
+				-15,  // Adept
+				-30,  // Expert
+				-40,  // Master
+				0     // Legendary
+			};
+			auto diffIndex = min(Player->difficulty, 5);
+			effectivbeLevelCap = difficultyCaps[diffIndex];
+		}
+
+		if (effectivbeLevelCap > 0) {
 			float level = Player->GetBaseActorValue(AV(skill));
-			return level >= decay.levelCap ? decay.levelCap : GetStartingLevel();
-		} else if (decay.levelCap < 0) {
-			return max(GetStartingLevel(), lastKnownHighestLevel + decay.levelCap);
+			return level >= effectivbeLevelCap ? effectivbeLevelCap : GetStartingLevel();
+		} else if (effectivbeLevelCap < 0) {
+			return max(GetStartingLevel(), lastKnownHighestLevel + effectivbeLevelCap);
 		} else {
 			return GetStartingLevel();
 		}

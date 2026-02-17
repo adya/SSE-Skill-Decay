@@ -41,9 +41,11 @@ namespace Decay
 		float legendarySkillDamping = 1.15f;
 
 		/// The lower cap for decay.
+		/// Skill cannot decay below the starting level.
+		/// 
 		/// Positive values represent absolute minimum level that Skill can decay to.
 		/// Negative values represent a relative offset from the highest level achieved in this skill
-		/// 0 means no cap, the skill will decay to the baseline level with which the player started.
+		/// 0 representes automatic scaling of level cap based on the difficulty.
 		int levelCap = 0;
 
 		/// The smallest number of days it should take to decay a skill by 1 level.
