@@ -217,15 +217,16 @@ namespace Decay
 				auto        g = config.decayTint.colorData.channels.green;
 				auto        b = config.decayTint.colorData.channels.blue;
 				auto        a = config.decayTint.colorData.channels.alpha;
-				logger::info("Applying tint to {}:", SkillName(skill));
-				logger::info("    RGBA: ({}, {}, {}, {})", r, g, b, a);
+				//logger::info("Applying tint to {}:", SkillName(skill));
+				//logger::info("    RGBA: ({}, {}, {}, {})", r, g, b, a);
 
 				for (const auto& path : config.uiLayers) {
-					if (movie->SetColorTint(path.c_str(), config.decayTint)) {
-						logger::info("    Layer: {}", path);
-					} else {
-						logger::warn("    Failed to apply tint to layer: {}", path);
-					}
+					movie->SetColorTint(path.c_str(), config.decayTint);
+					//if (movie->SetColorTint(path.c_str(), config.decayTint)) {
+					//	logger::info("    Layer: {}", path);
+					//} else {
+					//	logger::warn("    Failed to apply tint to layer: {}", path);
+					//}
 				}
 			}
 		}

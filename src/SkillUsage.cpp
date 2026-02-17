@@ -81,6 +81,11 @@ namespace Decay
 		daysPassedSinceLastDecay = calendar->GetDaysPassed();
 	}
 
+	bool SkillUsage::IsDecaying() const 
+	{ 
+		return isDecaying && Player->GetBaseActorValue(AV(skill)) > GetDecayCapLevel(); // If it can't decay any further, ignore the isDecaying flag.
+	}
+
 	void SkillUsage::Decay(const RE::Calendar* calendar)
 	{
 		assert(isDecaying);

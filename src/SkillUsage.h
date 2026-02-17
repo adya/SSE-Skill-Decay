@@ -91,7 +91,7 @@ namespace Decay
 		bool IsStale(const RE::Calendar* calendar) const;
 
 		void MarkDecaying(const RE::Calendar* calendar);
-		bool IsDecaying() const { return isDecaying; }
+		bool IsDecaying() const;
 		void Decay( const RE::Calendar*);
 
 		int GetDecayCapLevel() const;
