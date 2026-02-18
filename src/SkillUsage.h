@@ -5,7 +5,9 @@ namespace Decay
 	struct DecayConfig
 	{
 		/// Time interval in hours before a skill is considered stale (starting to decay).
-		float gracePeriod = 72.0f;
+		/// Negative value represents automatic scaling of grace period based on Skill level. 
+		/// Specifically, how far from the starting level the Player has progressed. The further the progression, the longer grace period is granted.
+		float gracePeriod = -0.0f;
 
 		/// Time interval in hours that it takes to fully decay XP of GetDecayTargetLevel().
 		float interval = 24.0f;
@@ -35,6 +37,7 @@ namespace Decay
 		float damping = 1.0f;
 
 		/// Additional damping to slow down decay with each legendary level in this skill.
+		/// This damping also applies to the grace period, so it will take longer for the skill to start decaying with each legendary level.
 		///
 		/// For each additional legendary level, fraction of this damping value is added.
 		/// e.g. with default 1.15f, each legendary level adds 0.15f to the damping.
@@ -70,7 +73,7 @@ namespace Decay
 		DecayConfig(std::vector<std::string> layers) :
 			uiLayers(std::move(layers))
 		{}
-		DecayConfig(float damping, std::vector<std::string> layers, int levelOffset = 0, float difficultyMult = -0.0f, float legendarySkillDamping = 1.15f, int levelCap = 0, float gracePeriod = 24.0f, float interval = 24.0f, int baselineLevelOffset = -1) :
+		DecayConfig(float damping, std::vector<std::string> layers, int levelOffset = 0, float difficultyMult = -0.0f, float legendarySkillDamping = 1.15f, int levelCap = 0, float gracePeriod = -0.0f, float interval = 24.0f, int baselineLevelOffset = -1) :
 			gracePeriod(gracePeriod),
 			interval(interval),
 			baselineLevelOffset(baselineLevelOffset),
@@ -137,6 +140,10 @@ namespace Decay
 		int   GetStartingLevel() const;
 		int   GetDecayTargetLevel() const;
 		float GetDifficultyMult() const;
+
+		float GetGracePeriod() const;
+
+		float GetLegendaryMult() const;
 
 		float CalculateLevelThresholdXP(int level) const;
 

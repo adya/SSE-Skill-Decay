@@ -72,7 +72,7 @@ namespace Decay
 			return false;
 
 		auto hoursPassed = (calendar->GetDaysPassed() - daysPassedWhenLastUsed) * 24.0f;
-		return hoursPassed >= decay.gracePeriod;
+		return hoursPassed >= GetGracePeriod();
 	}
 
 	void SkillUsage::MarkDecaying(const RE::Calendar* calendar)
@@ -97,7 +97,7 @@ namespace Decay
 
 		float timeDelta = hoursPassed / decay.interval;
 
-		float legendaryDamping = max(1, 1 + (decay.legendarySkillDamping - 1) * Player->skills->data->legendaryLevels[skill]);
+		float legendaryDamping = GetLegendaryMult();
 
 		float mult = GetDifficultyMult() / (decay.damping * legendaryDamping);
 		float rawDecayXP = CalculateLevelThresholdXP(GetDecayTargetLevel());
@@ -160,7 +160,7 @@ namespace Decay
 
 	inline float SkillUsage::GetDifficultyMult() const
 	{
-		if (decay.difficultyMult < 0.0f) {
+		if (std::signbit(decay.difficultyMult)) {
 			constexpr float difficultyMults[] = {
 				0.5f,   // Novice
 				0.75f,  // Apprentice
@@ -176,11 +176,46 @@ namespace Decay
 		}
 	}
 
+	float SkillUsage::GetGracePeriod() const
+	{
+		if (std::signbit(decay.gracePeriod)) {
+			float level = Player->GetBaseActorValue(AV(skill));
+			float target = GetDecayTargetLevel();
+
+			float ratio = target < level ? 1.0f : level / target;
+
+			constexpr float difficultyMults[] = {
+				3.0f,   // Novice
+				2.0f,   // Apprentice
+				1.75f,  // Adept
+				1.5f,   // Expert
+				1.25f,  // Master
+				1.0f    // Legendary
+			};
+
+			auto diffIndex = min(Player->difficulty, 5);
+			auto diffMult = difficultyMults[diffIndex];
+
+			auto gracePeriodBase = ratio * diffMult * GetLegendaryMult();
+
+			auto days = std::pow(max(1, gracePeriodBase), 0.75f);
+
+			return max(1.0f, days) * 24.0f * GetLegendaryMult();
+		} else {
+			return decay.gracePeriod;
+		}
+	}
+
+	float SkillUsage::GetLegendaryMult() const
+	{
+		return max(1, 1 + (decay.legendarySkillDamping - 1) * Player->skills->data->legendaryLevels[skill]);
+	}
+
 	inline int SkillUsage::GetDecayCapLevel() const
 	{
-		int effectivbeLevelCap = decay.levelCap;
+		int effectiveLevelCap = decay.levelCap;
 
-		if (effectivbeLevelCap == 0) {
+		if (effectiveLevelCap == 0) {
 			constexpr int difficultyCaps[] = {
 				-5,   // Novice
 				-10,  // Apprentice
@@ -190,14 +225,14 @@ namespace Decay
 				0     // Legendary
 			};
 			auto diffIndex = min(Player->difficulty, 5);
-			effectivbeLevelCap = difficultyCaps[diffIndex];
+			effectiveLevelCap = difficultyCaps[diffIndex];
 		}
 
-		if (effectivbeLevelCap > 0) {
+		if (effectiveLevelCap > 0) {
 			float level = Player->GetBaseActorValue(AV(skill));
-			return level >= effectivbeLevelCap ? effectivbeLevelCap : GetStartingLevel();
-		} else if (effectivbeLevelCap < 0) {
-			return max(GetStartingLevel(), lastKnownHighestLevel + effectivbeLevelCap);
+			return level >= effectiveLevelCap ? effectiveLevelCap : GetStartingLevel();
+		} else if (effectiveLevelCap < 0) {
+			return max(GetStartingLevel(), lastKnownHighestLevel + effectiveLevelCap);
 		} else {
 			return GetStartingLevel();
 		}

@@ -156,10 +156,6 @@ namespace Decay
 				ReadSettings(ini, "All", config);
 
 				// Lastly we want to validate input
-				if (config.gracePeriod < 0) {
-					config.gracePeriod = defaults.gracePeriod;
-				}
-
 				if (config.interval <= 0) {
 					config.interval = defaults.interval;
 				}
@@ -198,7 +194,7 @@ namespace Decay
 			const auto name = SkillName(skill);
 			logger::info("{:>11} | {:^12} | {:^14} | {:^15} | {:^12} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
 				name,
-				std::format("{:.1f}h", configs[skill].gracePeriod),
+				std::signbit(configs[skill].gracePeriod) ? "Auto" : std::format("{:.1f}h", configs[skill].gracePeriod),
 				std::format("{:.1f}h", configs[skill].interval),
 				configs[skill].baselineLevelOffset < 0 ? "Auto" : std::format("{}", configs[skill].baselineLevelOffset),
 				configs[skill].levelOffset,
