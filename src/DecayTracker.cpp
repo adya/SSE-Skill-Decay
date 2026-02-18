@@ -32,6 +32,7 @@ namespace Decay
 			config.legendarySkillDamping = ini.GetDoubleValue(section, "fLegendarySkillXPDamping", config.legendarySkillDamping);
 			config.minDaysPerLevel = ini.GetDoubleValue(section, "fMinDaysPerLevel", config.minDaysPerLevel);
 			config.maxDaysPerLevel = ini.GetDoubleValue(section, "fMaxDaysPerLevel", config.maxDaysPerLevel);
+			config.difficultyOverride = ini.GetLongValue(section, "iDifficulty", config.difficultyOverride);
 
 			std::string color = ini.GetValue(section, "cDecayTint", "");
 
@@ -177,6 +178,9 @@ namespace Decay
 				} else if (config.maxDaysPerLevel < config.minDaysPerLevel) {
 					config.maxDaysPerLevel = config.minDaysPerLevel + config.maxDaysPerLevel;
 				}
+
+				config.difficultyOverride = min(config.difficultyOverride, 5);
+				
 			}
 		} else {
 			logger::info(R"(Data\SKSE\Plugins\SkillDecay.ini not found. Default options will be used.)");
@@ -187,8 +191,10 @@ namespace Decay
 		auto formattedRate = trackingRate < 1.0f ? std::format("{:.2f} in-game minutes", trackingRate * 60.0f) : std::format("{:.2f} in-game hours", trackingRate);
 		logger::info("Tracking Rate: once every {}", formattedRate);
 
+		constexpr std::string_view difficultyNames[] = { "Novice", "Apprentice", "Adept", "Expert", "Master", "Legendary" };
+
 		logger::info("{:>11} | {:^12} | {:^14} | {:^15} | {:^12} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
-			"Skill", "Grace Period", "Decay Duration", "Baseline Offset", "Extra Offset", "Difficulty Mult", "Damping", "Legendary Damping", "Decay Cap", "Min Decay Days", "Max Decay Days");
+			"Skill", "Grace Period", "Decay Duration", "Baseline Offset", "Extra Offset", "Difficulty", "Difficulty Mult", "Damping", "Legendary Damping", "Decay Cap", "Min Decay Days", "Max Decay Days");
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
 			skillUsages[skill].Init(skill, configs[skill]);
 			const auto name = SkillName(skill);
@@ -198,6 +204,7 @@ namespace Decay
 				std::format("{:.1f}h", configs[skill].interval),
 				configs[skill].baselineLevelOffset < 0 ? "Auto" : std::format("{}", configs[skill].baselineLevelOffset),
 				configs[skill].levelOffset,
+				configs[skill].difficultyOverride < 0 ? "Auto" : difficultyNames[configs[skill].difficultyOverride],
 				std::signbit(configs[skill].difficultyMult) ? "Auto" : std::format("{:.2f}", configs[skill].difficultyMult),
 				std::format("/{:.2f}", configs[skill].damping),
 				std::format("+{:.0f}%", (configs[skill].legendarySkillDamping - 1) * 100.0f),

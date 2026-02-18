@@ -169,8 +169,7 @@ namespace Decay
 				2.0f,   // Master
 				3.0f    // Legendary
 			};
-			auto diffIndex = min(Player->difficulty, 5);
-			return difficultyMults[diffIndex];
+			return difficultyMults[GetDifficulty()];
 		} else {
 			return decay.difficultyMult;
 		}
@@ -193,8 +192,7 @@ namespace Decay
 				1.0f    // Legendary
 			};
 
-			auto diffIndex = min(Player->difficulty, 5);
-			auto diffMult = difficultyMults[diffIndex];
+			auto diffMult = difficultyMults[GetDifficulty()];
 
 			auto gracePeriodBase = ratio * diffMult * GetLegendaryMult();
 
@@ -211,6 +209,15 @@ namespace Decay
 		return max(1, 1 + (decay.legendarySkillDamping - 1) * Player->skills->data->legendaryLevels[skill]);
 	}
 
+	int SkillUsage::GetDifficulty() const
+	{
+		if (decay.difficultyOverride >= 0) {
+			return decay.difficultyOverride;
+		} else {
+			return Player->difficulty;
+		}
+	}
+
 	inline int SkillUsage::GetDecayCapLevel() const
 	{
 		int effectiveLevelCap = decay.levelCap;
@@ -224,8 +231,7 @@ namespace Decay
 				-40,  // Master
 				0     // Legendary
 			};
-			auto diffIndex = min(Player->difficulty, 5);
-			effectiveLevelCap = difficultyCaps[diffIndex];
+			effectiveLevelCap = difficultyCaps[GetDifficulty()];
 		}
 
 		if (effectiveLevelCap > 0) {

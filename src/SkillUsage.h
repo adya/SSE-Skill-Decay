@@ -32,6 +32,9 @@ namespace Decay
 		/// 0 disables decay for the skill.
 		float difficultyMult = -0.0f;
 
+		/// If non-negative, this difficulty will be used instead of Player's actual difficulty for calculating decay rate.
+		int difficultyOverride = -1;  
+
 		/// Damping multiplier to the XP decay rate. Larger multiplier means slower decay.
 		/// Must be positive. Applied as a 1/damping.
 		float damping = 1.0f;
@@ -73,15 +76,8 @@ namespace Decay
 		DecayConfig(std::vector<std::string> layers) :
 			uiLayers(std::move(layers))
 		{}
-		DecayConfig(float damping, std::vector<std::string> layers, int levelOffset = 0, float difficultyMult = -0.0f, float legendarySkillDamping = 1.15f, int levelCap = 0, float gracePeriod = -0.0f, float interval = 24.0f, int baselineLevelOffset = -1) :
-			gracePeriod(gracePeriod),
-			interval(interval),
-			baselineLevelOffset(baselineLevelOffset),
-			levelOffset(levelOffset),
-			difficultyMult(difficultyMult),
+		DecayConfig(float damping, std::vector<std::string> layers) :
 			damping(damping),
-			legendarySkillDamping(legendarySkillDamping),
-			levelCap(levelCap),
 			uiLayers(std::move(layers))
 		{}
 	};
@@ -144,6 +140,8 @@ namespace Decay
 		float GetGracePeriod() const;
 
 		float GetLegendaryMult() const;
+
+		int GetDifficulty() const;
 
 		float CalculateLevelThresholdXP(int level) const;
 
