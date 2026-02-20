@@ -162,10 +162,10 @@ namespace Decay
 	{
 		if (std::signbit(decay.difficultyMult)) {
 			constexpr float difficultyMults[] = {
-				0.5f,   // Novice
-				0.75f,  // Apprentice
-				1.0f,   // Adept
-				1.5f,   // Expert
+				1.0f,   // Novice
+				1.25f,  // Apprentice
+				1.5f,   // Adept
+				1.75f,  // Expert
 				2.0f,   // Master
 				3.0f    // Legendary
 			};
