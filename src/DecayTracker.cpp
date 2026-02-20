@@ -180,7 +180,6 @@ namespace Decay
 				}
 
 				config.difficultyOverride = min(config.difficultyOverride, 5);
-				
 			}
 		} else {
 			logger::info(R"(Data\SKSE\Plugins\SkillDecay.ini not found. Default options will be used.)");

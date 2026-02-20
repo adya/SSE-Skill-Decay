@@ -5,7 +5,7 @@ namespace Decay
 	struct DecayConfig
 	{
 		/// Time interval in hours before a skill is considered stale (starting to decay).
-		/// Negative value represents automatic scaling of grace period based on Skill level. 
+		/// Negative value represents automatic scaling of grace period based on Skill level.
 		/// Specifically, how far from the starting level the Player has progressed. The further the progression, the longer grace period is granted.
 		float gracePeriod = -0.0f;
 
@@ -33,7 +33,7 @@ namespace Decay
 		float difficultyMult = -0.0f;
 
 		/// If non-negative, this difficulty will be used instead of Player's actual difficulty for calculating decay rate.
-		int difficultyOverride = -1;  
+		int difficultyOverride = -1;
 
 		/// Damping multiplier to the XP decay rate. Larger multiplier means slower decay.
 		/// Must be positive. Applied as a 1/damping.
