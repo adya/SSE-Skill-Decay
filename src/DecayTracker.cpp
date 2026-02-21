@@ -192,12 +192,12 @@ namespace Decay
 
 		constexpr std::string_view difficultyNames[] = { "Novice", "Apprentice", "Adept", "Expert", "Master", "Legendary" };
 
-		logger::info("{:>11} | {:^12} | {:^14} | {:^15} | {:^12} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
+		logger::info("{:>11} | {:^12} | {:^14} | {:^15} | {:^12} | {:^10} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
 			"Skill", "Grace Period", "Decay Duration", "Baseline Offset", "Extra Offset", "Difficulty", "Difficulty Mult", "Damping", "Legendary Damping", "Decay Cap", "Min Decay Days", "Max Decay Days");
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
 			skillUsages[skill].Init(skill, configs[skill]);
 			const auto name = SkillName(skill);
-			logger::info("{:>11} | {:^12} | {:^14} | {:^15} | {:^12} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
+			logger::info("{:>11} | {:^12} | {:^14} | {:^15} | {:^12} | {:^10} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
 				name,
 				std::signbit(configs[skill].gracePeriod) ? "Auto" : std::format("{:.1f}h", configs[skill].gracePeriod),
 				std::format("{:.1f}h", configs[skill].interval),
