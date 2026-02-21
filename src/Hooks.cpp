@@ -10,19 +10,15 @@ namespace Decay
 		using Target = RE::StatsMenu;
 		static inline constexpr std::size_t index{ 0x4 };
 
-		static inline bool isTinted = false;
 
 		static RE::UI_MESSAGE_RESULTS thunk(RE::StatsMenu* menu, RE::UIMessage& msg)
 		{
 			auto result = func(menu, msg);
 
 			if (msg.type == RE::UI_MESSAGE_TYPE::kUpdate) {
-				if (auto movie = menu->uiMovie; movie && !isTinted) {
-					isTinted = true;
+				if (auto movie = menu->uiMovie; movie) {
 					DecayTracker::GetInstance().ApplyTint(movie.get());
 				}
-			} else if (msg.type == RE::UI_MESSAGE_TYPE::kShow || msg.type == RE::UI_MESSAGE_TYPE::kHide) {
-				isTinted = false;
 			}
 
 			return result;
