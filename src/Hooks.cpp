@@ -10,7 +10,6 @@ namespace Decay
 		using Target = RE::StatsMenu;
 		static inline constexpr std::size_t index{ 0x4 };
 
-
 		static RE::UI_MESSAGE_RESULTS thunk(RE::StatsMenu* menu, RE::UIMessage& msg)
 		{
 			auto result = func(menu, msg);
