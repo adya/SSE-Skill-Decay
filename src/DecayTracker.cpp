@@ -19,6 +19,10 @@ namespace Decay
 		}
 	}
 
+	void DecayTracker::DecaySkill(Skill skill, float decayXP, bool decayLevels) {
+		skillUsages[skill].DecaySkill(Player->skills->data->skills[skill], decayXP, decayLevels);
+	}
+
 	void ReadSettings(const CSimpleIniA& ini, const char* section, DecayConfig& config)
 	{
 		if (ini.SectionExists(section)) {
@@ -293,7 +297,6 @@ namespace Decay
 // Serialization
 namespace Decay
 {
-
 	namespace details
 	{
 		template <typename T>

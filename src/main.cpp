@@ -1,5 +1,6 @@
 #include "DecayTracker.h"
 #include "Hooks.h"
+#include "ModAPI.h"
 
 void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 {
@@ -84,4 +85,20 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 	SKSE::GetMessagingInterface()->RegisterListener(MessageHandler);
 
 	return true;
+}
+
+extern "C" DLLEXPORT void* SKSEAPI RequestPluginAPI(const SkillDecay::InterfaceVersion a_interfaceVersion)
+{
+	const auto api = Decay::DecayInterface::GetSingleton(a_interfaceVersion);
+
+	logger::info("SkillDecay::RequestPluginAPI called, InterfaceVersion {}", static_cast<std::underlying_type<SkillDecay::InterfaceVersion>::type>(a_interfaceVersion));
+
+	switch (a_interfaceVersion) {
+	case SkillDecay::InterfaceVersion::kV1:
+		logger::info("SkillDecay::RequestPluginAPI returned the API singleton");
+		return api;
+	}
+
+	logger::info("SkillDecay::RequestPluginAPI requested the wrong interface version");
+	return nullptr;
 }
