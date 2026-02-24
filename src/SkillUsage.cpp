@@ -111,14 +111,14 @@ namespace Decay
 
 		float decayXP = clampedDecayXP * timeDelta;
 
-		DecaySkill(skillData, decayXP);
+		DecaySkill(skillData, decayXP, true); // standard decay always affects levels, the levelCap in config will control the actual limit.
 
 		lastKnownLevel = Player->GetBaseActorValue(AV(skill));
 		lastKnownXP = skillData.xp;
 		daysPassedSinceLastDecay = daysPassed;
 	}
 
-	void SkillUsage::DecaySkill(SkillData& skillData, float& decayXPAmount)
+	void SkillUsage::DecaySkill(SkillData& skillData, float& decayXPAmount, bool decayLevels)
 	{
 		if (decayXPAmount <= 0.0f)
 			return;
@@ -128,7 +128,7 @@ namespace Decay
 		if (skillData.xp >= decayXPAmount) {
 			skillData.xp -= decayXPAmount;
 			decayXPAmount = 0.0f;
-		} else if (level <= GetDecayCapLevel()) {
+		} else if (!decayLevels || level <= GetDecayCapLevel()) {
 			// We can't decay any further, so just reset XP.
 			skillData.xp = 0.0f;
 			decayXPAmount = 0.0f;
@@ -143,7 +143,7 @@ namespace Decay
 			if (level == skillData.level) {
 				skillData.level -= 1;
 			}
-			DecaySkill(skillData, decayXPAmount);
+			DecaySkill(skillData, decayXPAmount, decayLevels);
 		}
 	}
 
@@ -222,14 +222,14 @@ namespace Decay
 	{
 		int effectiveLevelCap = decay.levelCap;
 
-		if (effectiveLevelCap == 0) {
+		if (std::signbit(decay.levelCap) && decay.levelCap == 0) {
 			constexpr int difficultyCaps[] = {
 				-5,   // Novice
 				-10,  // Apprentice
 				-15,  // Adept
 				-30,  // Expert
 				-40,  // Master
-				0     // Legendary
+				-500  // Legendary
 			};
 			effectiveLevelCap = difficultyCaps[GetDifficulty()];
 		}

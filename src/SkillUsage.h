@@ -51,8 +51,9 @@ namespace Decay
 		///
 		/// Positive values represent absolute minimum level that Skill can decay to.
 		/// Negative values represent a relative offset from the highest level achieved in this skill
-		/// 0 representes automatic scaling of level cap based on the difficulty.
-		int levelCap = 0;
+		/// 0 represents a limit for current level, meaning that skill cannot decay below the current level when it starts decaying.
+		/// -0 represents automatic scaling of level cap based on the difficulty.
+		int levelCap = -0;
 
 		/// The smallest number of days it should take to decay a skill by 1 level.
 		/// This value is used to clamp maximum allowed decay XP, to prevent too rapid decays on smaller levels.
@@ -99,6 +100,10 @@ namespace Decay
 		bool IsDecaying() const;
 		void Decay(const RE::Calendar*);
 
+		/// Subtracts decayXPAmount recursively, decreasing skill level as needed.
+		void DecaySkill(SkillData& skillData, float& decayXPAmount, bool decayLevels);
+
+
 		int GetDecayCapLevel() const;
 
 		const DecayConfig& GetConfig() const { return decay; }
@@ -129,9 +134,6 @@ namespace Decay
 		int raceSkillBonus = 0;
 
 		DecayConfig decay;
-
-		/// Subtracts decayXPAmount recursively, decreasing skill level as needed.
-		void DecaySkill(SkillData& skillData, float& decayXPAmount);
 
 		int   GetStartingLevel() const;
 		int   GetDecayTargetLevel() const;
