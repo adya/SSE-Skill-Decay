@@ -42,6 +42,22 @@ namespace SkillDecay
 		/// <param name="decayXP">The amount of XP to subtract from the skill.</param>
 		/// <param name="decayLevels">If true and decayXP is larger than the skill's current XP, skill level will be reduced and remaining decayXP subtracted.</param>
 		virtual void DecaySkill(RE::PlayerCharacter::PlayerSkills::Data::Skill skill, float decayXP, bool decayLevels) noexcept = 0;
+
+		/// <summary>
+		/// Resets decaying state of a specified skill, preventing it from decaying until it is applied again.
+		///
+		/// If the skill is not currently decaying, this function does nothing.
+		/// </summary>
+		/// <param name="avSkill">The skill to reset, specified as an ActorValue. The ActorValue must point to a valid skill.</param>
+		virtual void ResetDecay(RE::ActorValue avSkill) noexcept = 0;
+
+		/// <summary>
+		/// Resets decaying state of a specified skill, preventing it from decaying until it is applied again.
+		///
+		/// If the skill is not currently decaying, this function does nothing.
+		/// </summary>
+		/// <param name="skill">The skill to reset.</param>
+		virtual void ResetDecay(RE::PlayerCharacter::PlayerSkills::Data::Skill skill) noexcept = 0;
 	};
 
 	typedef void* (*_RequestPluginAPI)(const InterfaceVersion interfaceVersion);
@@ -54,8 +70,8 @@ namespace SkillDecay
 	/// <returns>The pointer to the API singleton, or nullptr if request failed</returns>
 	[[nodiscard]] inline void* RequestPluginAPI(const InterfaceVersion a_interfaceVersion = InterfaceVersion::kV1)
 	{
-		const auto pluginHandle = GetModuleHandle(reinterpret_cast<LPCWSTR>("SkillDecay.dll"));
-		if (const _RequestPluginAPI requestAPIFunction = reinterpret_cast<_RequestPluginAPI>(GetProcAddress(pluginHandle, "RequestPluginAPI"))) {
+		const auto pluginHandle = GetModuleHandleA("SkillDecay.dll");
+		if (_RequestPluginAPI requestAPIFunction = (_RequestPluginAPI)GetProcAddress(pluginHandle, "RequestPluginAPI"); requestAPIFunction) {
 			return requestAPIFunction(a_interfaceVersion);
 		}
 		return nullptr;

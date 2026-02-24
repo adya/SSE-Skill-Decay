@@ -19,23 +19,6 @@ namespace Decay
 		void AdvanceTime(RE::Calendar* calendar);
 		void LoadSettings();
 
-		bool IsDecaying(Skill skill) const
-		{
-			return skillUsages[skill].IsDecaying();
-		}
-
-		bool IsDecaying() const
-		{
-			for (const auto& usage : skillUsages) {
-				if (usage.IsDecaying()) {
-					return true;
-				}
-			}
-			return false;
-		}
-
-		void DecaySkill(Skill skill, float decayXP, bool decayLevels);
-
 		void ApplyTint(RE::GFxMovieView*) const;
 
 	protected:

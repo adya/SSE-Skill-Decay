@@ -23,5 +23,7 @@ namespace Decay
 		bool IsDecaying(RE::PlayerCharacter::PlayerSkills::Data::Skill skill) noexcept override;
 		void DecaySkill(RE::ActorValue avSkill, float decayXP, bool decayLevels) noexcept override;
 		void DecaySkill(RE::PlayerCharacter::PlayerSkills::Data::Skill skill, float decayXP, bool decayLevels) noexcept override;
+		void ResetDecay(RE::ActorValue avSkill) noexcept override;
+		void ResetDecay(RE::PlayerCharacter::PlayerSkills::Data::Skill skill) noexcept override;
 	};
 }

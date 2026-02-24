@@ -65,6 +65,12 @@ namespace Decay
 		isDecaying = false;
 	}
 
+	void SkillUsage::ResetDecay()
+	{
+		daysPassedWhenLastUsed = RE::Calendar::GetSingleton()->GetDaysPassed();
+		isDecaying = false;
+	}
+
 	bool SkillUsage::IsStale(const RE::Calendar* calendar) const
 	{
 		// If already decaying, no need to check further

@@ -93,6 +93,7 @@ namespace Decay
 
 		bool WasUsed() const;
 		void SetUsed(const RE::Calendar* calendar);
+		void ResetDecay();
 
 		bool IsStale(const RE::Calendar* calendar) const;
 
