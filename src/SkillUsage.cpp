@@ -7,10 +7,9 @@
 
 namespace Decay
 {
-	void SkillUsage::Init(Skill skill, DecayConfig& config)
-	{
+	void SkillUsage::Init(Skill skill, const DecayConfig& config) {
 		this->skill = skill;
-		this->decay = std::move(config);
+		this->decay = config;
 
 		baselineLevel = Settings::iAVDSkillStart();
 		raceSkillBonus = 0;
@@ -28,13 +27,23 @@ namespace Decay
 		}
 	}
 
+	void SkillUsage::Init(Skill skill, DecayConfig& config)
+	{
+		Init(skill, std::move(config));
+	}
+
 	void SkillUsage::Revert()
 	{
 		daysPassedWhenLastUsed = 0;
 		lastKnownLevel = -1;
 		lastKnownXP = -1;
+		lastKnownHighestLevel = -1;
+		lastKnownLegendaryLevel = 0;
 		isDecaying = false;
 		daysPassedSinceLastDecay = 0;
+
+		baselineLevel = 15;
+		raceSkillBonus = 0;
 	}
 
 	bool SkillUsage::IsInitialized() const
@@ -89,7 +98,15 @@ namespace Decay
 
 	bool SkillUsage::IsDecaying() const
 	{
-		return isDecaying && Player->GetBaseActorValue(AV(skill)) > GetDecayCapLevel();  // If it can't decay any further, ignore the isDecaying flag.
+		if (!isDecaying) {
+			return false;
+		}
+
+		auto cap = GetDecayCapLevel();
+		auto level = Player->GetBaseActorValue(AV(skill));
+
+		// If we're above the cap level, we should be decaying. If we're at the cap level, we can still decay if there's some XP to decay.
+		return level == cap ? Player->skills->data->skills[skill].xp > 0 : level > cap;  
 	}
 
 	void SkillUsage::Decay(const RE::Calendar* calendar)
@@ -228,7 +245,7 @@ namespace Decay
 	{
 		int effectiveLevelCap = decay.levelCap;
 
-		if (std::signbit(decay.levelCap) && decay.levelCap == 0) {
+		if (decay.levelCap == INT_MAX) {
 			constexpr int difficultyCaps[] = {
 				-5,   // Novice
 				-10,  // Apprentice
@@ -243,7 +260,7 @@ namespace Decay
 		if (effectiveLevelCap > 0) {
 			float level = Player->GetBaseActorValue(AV(skill));
 			return level >= effectiveLevelCap ? effectiveLevelCap : GetStartingLevel();
-		} else if (effectiveLevelCap < 0) {
+		} else if (effectiveLevelCap <= 0) {
 			return max(GetStartingLevel(), lastKnownHighestLevel + effectiveLevelCap);
 		} else {
 			return GetStartingLevel();

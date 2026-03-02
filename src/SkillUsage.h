@@ -52,8 +52,8 @@ namespace Decay
 		/// Positive values represent absolute minimum level that Skill can decay to.
 		/// Negative values represent a relative offset from the highest level achieved in this skill
 		/// 0 represents a limit for current level, meaning that skill cannot decay below the current level when it starts decaying.
-		/// -0 represents automatic scaling of level cap based on the difficulty.
-		int levelCap = -0;
+		/// INT_MAX represents automatic scaling of level cap based on the difficulty.
+		int levelCap = INT_MAX;
 
 		/// The smallest number of days it should take to decay a skill by 1 level.
 		/// This value is used to clamp maximum allowed decay XP, to prevent too rapid decays on smaller levels.
@@ -85,7 +85,8 @@ namespace Decay
 
 	struct SkillUsage
 	{
-		void Init(Skill skill, DecayConfig& config);
+		void Init(Skill, const DecayConfig&);
+		void Init(Skill, DecayConfig&);
 		void Revert();
 
 		/// Checks whether this SkillUsage has received at least one SetUsed() call.

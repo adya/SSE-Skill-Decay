@@ -207,7 +207,7 @@ namespace Decay
 				std::signbit(configs[skill].difficultyMult) ? "Auto" : std::format("{:.2f}", configs[skill].difficultyMult),
 				std::format("/{:.2f}", configs[skill].damping),
 				std::format("+{:.0f}%", (configs[skill].legendarySkillDamping - 1) * 100.0f),
-				configs[skill].levelCap == 0 ? "Base" : std::format("{}", configs[skill].levelCap),
+				configs[skill].levelCap == INT_MAX ? "Auto" : (configs[skill].levelCap == 0 ? "Current" : std::format("{}", configs[skill].levelCap)),
 				std::format("{:.1f}d", configs[skill].minDaysPerLevel),
 				std::format("{:.1f}d", configs[skill].maxDaysPerLevel));
 		}
@@ -339,10 +339,6 @@ namespace Decay
 
 	bool Write(SKSE::SerializationInterface* a_interface, const SkillUsage& skill)
 	{
-		if (!a_interface->OpenRecord(skillUsageRecordType, skillUsageVersion)) {
-			return false;
-		}
-
 		return details::Write(a_interface, skill.daysPassedWhenLastUsed) &&
 		       details::Write(a_interface, skill.lastKnownLevel) &&
 		       details::Write(a_interface, skill.lastKnownXP) &&
@@ -381,27 +377,30 @@ namespace Decay
 		logger::info("{:*^30}", " LOADING ");
 
 		std::uint32_t type, version, length;
-		Skill         skill = Skill::kOneHanded;
 
 		auto& tracker = GetInstance();
 		tracker.lastDaysPassed = 0.0f;
 
+		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
+			tracker[skill].Init(skill, tracker[skill].GetConfig());
+		}
+
+		Skill skill = Skill::kOneHanded;
 		while (skill < Skill::kTotal && interface->GetNextRecordInfo(type, version, length)) {
-			if (type == skillUsageRecordType) {
-				switch (version) {
-				case 1:
-					if (Read(interface, tracker[skill])) {
-						logger::info("Loaded usage for {}", SkillName(skill));
-					} else {
-						logger::error("Failed to load usage for {}. SkillUsage will be reset.", SkillName(skill));
-					}
-					break;
-				default:
-					logger::error("Unsupported SkillUsage version: {} for {}. SkillUsage will be reset.", version, SkillName(skill));
-					break;
+			switch (version) {
+			case 1:
+				if (Read(interface, tracker[skill])) {
+					logger::info("Loaded usage for {}", SkillName(skill));
+				} else {
+					tracker[skill].SetUsed(RE::Calendar::GetSingleton());
+					logger::error("Failed to load usage for {}. SkillUsage will be reset.", SkillName(skill));
 				}
-				Inc(skill);
+				break;
+			default:
+				logger::error("Unsupported SkillUsage version: {} for {}. SkillUsage will be reset.", version, SkillName(skill));
+				break;
 			}
+			Inc(skill);
 		}
 	}
 
