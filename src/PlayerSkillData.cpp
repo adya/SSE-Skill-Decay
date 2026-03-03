@@ -3,20 +3,9 @@
 namespace Decay
 {
 	PlayerSkillData::PlayerSkillData(Skill skill) :
-		skill(skill)
-	{
-		avi = RE::ActorValueList::GetActorValueInfo(AV(skill));
-		raceBonus = 0;
-		for (const auto& boost : Player->GetRace()->data.skillBoosts) {
-			const auto skillIndex = boost.skill.underlying() - 6;
-			if (skillIndex >= 0 && skillIndex < Skill::kTotal) {
-				if (static_cast<Skill>(skillIndex) == skill) {
-					raceBonus = boost.bonus;
-					break;
-				}
-			}
-		}
-	}
+		skill(skill),
+		avi(RE::ActorValueList::GetActorValueInfo(AV(skill)))
+	{}
 
 	std::string_view PlayerSkillData::GetName() const noexcept
 	{
@@ -40,7 +29,16 @@ namespace Decay
 
 	int PlayerSkillData::GetRaceBonus() noexcept
 	{
-		return raceBonus;
+		for (const auto& boost : Player->GetRace()->data.skillBoosts) {
+			const auto skillIndex = boost.skill.underlying() - 6;
+			if (skillIndex >= 0 && skillIndex < Skill::kTotal) {
+				if (static_cast<Skill>(skillIndex) == skill) {
+					return boost.bonus;
+				}
+			}
+		}
+
+		return 0;
 	}
 
 	int PlayerSkillData::GetLegendaryLevel() const noexcept
@@ -53,11 +51,12 @@ namespace Decay
 		auto& skillData = Player->skills->data->skills[skill];
 		auto  level = Player->GetBaseActorValue(AV(skill));
 
-		Player->ModBaseActorValue(AV(skill), -1);
+		Player->ModBaseActorValue(AV(skill), mod);
 		// skillData.level is only updated after player confirms level up (in Skills Menu).
 		// Before that, skillData.level will remain at the last confirmed level, even if GetBaseAV's level is further.
 		if (level == skillData.level) {
-			skillData.level -= 1;
+			skillData.level += mod;
+			skillData.levelThreshold = CalculateLevelThresholdXP(skillData.level);
 		}
 	}
 

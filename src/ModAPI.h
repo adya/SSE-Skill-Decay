@@ -25,5 +25,18 @@ namespace Decay
 		void DecaySkill(RE::PlayerCharacter::PlayerSkills::Data::Skill skill, float decayXP, bool decayLevels) noexcept override;
 		void ResetDecay(RE::ActorValue avSkill) noexcept override;
 		void ResetDecay(RE::PlayerCharacter::PlayerSkills::Data::Skill skill) noexcept override;
+
+		bool RegisterCustomSkill(
+			const char*                       skillId,
+			RE::ActorValueInfo*               avi,
+			RE::TESGlobal*                    levelGlobal,
+			RE::TESGlobal*                    xpGlobal,
+			bool                              xpNormalized,
+			RE::TESGlobal*                    legendaryGlobal,
+			const std::pair<RE::FormID, int>* raceBonuses,
+			size_t                            raceBonusesCount) noexcept override;
+
+		void UnregisterCustomSkill(const char* skillId) noexcept override;
+		bool IsCustomSkillRegistered(const char* skillId) noexcept override;
 	};
 }

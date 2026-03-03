@@ -58,6 +58,13 @@ namespace Decay
 		}
 	}
 
+	DecayTracker::DecayTracker()
+	{
+		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
+			defaultSkills[skill] = new PlayerSkillData(skill);
+		}
+	}
+
 	void DecayTracker::LoadSettings()
 	{
 		logger::info("{:*^30}", " OPTIONS ");
@@ -107,6 +114,10 @@ namespace Decay
 			/* Restoration */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText16.ShortBar.instance190", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText16.ShortBar.instance192" }),
 			/* Enchanting */ DecayConfig(1.25f, { "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText0.ShortBar.instance94", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText0.ShortBar.instance96" })
 		};
+
+		// TODO: Log paths for custom skills
+
+		// TODO: Read sections for custom skill based on their names.
 
 		const std::string sections[Skill::kTotal] = {
 			"OneHanded",
@@ -195,7 +206,7 @@ namespace Decay
 		logger::info("{:>11} | {:^12} | {:^14} | {:^15} | {:^12} | {:^10} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
 			"Skill", "Grace Period", "Decay Duration", "Baseline Offset", "Extra Offset", "Difficulty", "Difficulty Mult", "Damping", "Legendary Damping", "Decay Cap", "Min Decay Days", "Max Decay Days");
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
-			skillUsages[skill].Init(skill, configs[skill]);
+			skillUsages[skill].Init(defaultSkills[skill], configs[skill]);
 			const auto name = SkillName(skill);
 			logger::info("{:>11} | {:^12} | {:^14} | {:^15} | {:^12} | {:^10} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
 				name,
@@ -242,6 +253,23 @@ namespace Decay
 				}
 			}
 		}
+	}
+
+	bool DecayTracker::RegisterCustomSkill(const std::string& skillId, RE::ActorValueInfo* avi, RE::TESGlobal* levelGlobal, RE::TESGlobal* xpGlobal, bool xpNormalized, RE::TESGlobal* legendaryGlobal, std::map<RE::FormID, int>& raceBonuses) noexcept
+	{
+		if (PlayerSkillData::IsDefaultSkill(skillId)) {
+			logger::error("Cannot register custom skill with ID {} because it conflicts with default skill names.", skillId);
+			return false;
+		}
+
+		auto skill = new CustomSkillData(skillId, avi, levelGlobal, xpGlobal, xpNormalized, legendaryGlobal, raceBonuses);
+		customSkills[skillId] = skill;
+		
+		auto usage = SkillUsage();
+		usage.Init(skill, DecayConfig()); // TODO: Config needs to be read from file.
+		customSkillUsages[skillId] = usage;
+
+		return true;
 	}
 
 	RE::BSEventNotifyControl DecayTracker::ProcessEvent(const RE::MenuOpenCloseEvent* event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*)
@@ -382,7 +410,7 @@ namespace Decay
 		tracker.lastDaysPassed = 0.0f;
 
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
-			tracker[skill].Init(skill, tracker[skill].GetConfig());
+			tracker[skill].Init(tracker.defaultSkills[skill], tracker[skill].GetConfig());
 		}
 
 		Skill skill = Skill::kOneHanded;

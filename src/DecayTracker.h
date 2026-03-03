@@ -1,5 +1,7 @@
 #pragma once
 #include "SkillUsage.h"
+#include "CustomSkillData.h"
+#include "PlayerSkillData.h"
 
 namespace Decay
 {
@@ -21,6 +23,15 @@ namespace Decay
 
 		void ApplyTint(RE::GFxMovieView*) const;
 
+		bool RegisterCustomSkill(
+			const std::string&         skillId,
+			RE::ActorValueInfo*        avi,
+			RE::TESGlobal*             levelGlobal,
+			RE::TESGlobal*             xpGlobal,
+			bool                       xpNormalized,
+			RE::TESGlobal*             legendaryGlobal,
+			std::map<RE::FormID, int>& raceBonuses) noexcept;
+
 	protected:
 		RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override;
 
@@ -28,8 +39,15 @@ namespace Decay
 		/// Hours between SkillUsage updates.
 		float      trackingRate = 0.016f;  // once every in-game minute by default
 		bool       logSkillUsage = false;
-		float      lastDaysPassed;
-		SkillUsage skillUsages[Skill::kTotal];
+		float      lastDaysPassed = 0;
+
+		SkillUsage       skillUsages[Skill::kTotal];
+		PlayerSkillData* defaultSkills[Skill::kTotal];
+
+		std::map<std::string, SkillUsage>       customSkillUsages{};
+		std::map<std::string, CustomSkillData*> customSkills{};
+
+		DecayTracker();
 
 		void UpdateSkillUsage(RE::Calendar*);
 

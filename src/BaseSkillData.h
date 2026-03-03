@@ -17,7 +17,12 @@ namespace Decay
 		/// Sets XP of the associated Skill.
 		virtual void SetXP(float xp) noexcept = 0;
 
-		inline int  GetBaselineLevel() const noexcept { Settings::iAVDSkillStart(); }
+		/// Starting level of the skill.
+		inline int GetBaselineLevel() const noexcept { return Settings::iAVDSkillStart(); }
+
+		/// Bonus that Player's race provides to the skill.
+		/// Together with baselineLevel is used to calculate XP decay rate for the skill.
+		/// Also, used to prevent decaying below (baselineLevel + raceSkillBonus).
 		virtual int GetRaceBonus() noexcept = 0;
 
 		virtual int GetLegendaryLevel() const noexcept = 0;

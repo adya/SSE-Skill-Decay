@@ -30,6 +30,8 @@ namespace Decay
 		if (!xpGlobal)
 			return;
 
+		xp = max(0.0f, xp);
+
 		if (xpNormalized) {
 			if (float threshold = CalculateLevelThresholdXP(GetLevel()); threshold > 0) {
 				xpGlobal->value = xp / threshold;
@@ -54,7 +56,7 @@ namespace Decay
 		if (!levelGlobal)
 			return;
 
-		levelGlobal->value += mod;
+		levelGlobal->value = max(0, levelGlobal->value + mod);
 	}
 
 	RE::ActorValueInfo* CustomSkillData::GetAVInfo() const noexcept

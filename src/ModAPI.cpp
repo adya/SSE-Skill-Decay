@@ -48,4 +48,33 @@ namespace Decay
 	{
 		DecayTracker::GetInstance()[skill].ResetDecay();
 	}
+
+	bool DecayInterface::RegisterCustomSkill(
+		const char*                       skillId,
+		RE::ActorValueInfo*               avi,
+		RE::TESGlobal*                    levelGlobal,
+		RE::TESGlobal*                    xpGlobal,
+		bool                              xpNormalized,
+		RE::TESGlobal*                    legendaryGlobal,
+		const std::pair<RE::FormID, int>* raceBonuses,
+		size_t                            raceBonusesCount) noexcept
+	{
+		if (!skillId || !levelGlobal || !xpGlobal || !avi || !legendaryGlobal)
+			return false;
+
+		auto& tracker = DecayTracker::GetInstance();
+		
+		std::map<RE::FormID, int> raceBonusesMap{};
+
+		if (raceBonuses && raceBonusesCount > 0) {
+			for (size_t i = 0; i < raceBonusesCount; ++i) {
+				raceBonusesMap[raceBonuses[i].first] = raceBonuses[i].second;
+			}
+		}
+
+		return tracker.RegisterCustomSkill(
+			skillId, avi,
+			levelGlobal, xpGlobal, xpNormalized, legendaryGlobal,
+			raceBonusesMap);
+	}
 }

@@ -7,27 +7,19 @@
 
 namespace Decay
 {
-	void SkillUsage::Init(Skill skill, const DecayConfig& config) {
+	void SkillUsage::Init(BaseSkillData* skill, const DecayConfig& config)
+	{
 		this->skill = skill;
 		this->decay = config;
 
-		baselineLevel = Settings::iAVDSkillStart();
-		raceSkillBonus = 0;
-
 		for (const auto& boost : Player->GetRace()->data.skillBoosts) {
-			const auto skillIndex = boost.skill.underlying() - 6;
-			if (skillIndex >= 0 && skillIndex < Skill::kTotal) {
-				if (static_cast<Skill>(skillIndex) == skill && raceSkillBonus == 0) {
-					raceSkillBonus = boost.bonus;
-				}
-				if (decay.baselineLevelOffset < 0 && boost.bonus > decay.baselineLevelOffset) {
-					decay.baselineLevelOffset = boost.bonus;
-				}
+			if (decay.baselineLevelOffset < 0 && boost.bonus > decay.baselineLevelOffset) {
+				decay.baselineLevelOffset = boost.bonus;
 			}
 		}
 	}
 
-	void SkillUsage::Init(Skill skill, DecayConfig& config)
+	void SkillUsage::Init(BaseSkillData* skill, DecayConfig& config)
 	{
 		Init(skill, std::move(config));
 	}
@@ -41,9 +33,6 @@ namespace Decay
 		lastKnownLegendaryLevel = 0;
 		isDecaying = false;
 		daysPassedSinceLastDecay = 0;
-
-		baselineLevel = 15;
-		raceSkillBonus = 0;
 	}
 
 	bool SkillUsage::IsInitialized() const
@@ -53,16 +42,19 @@ namespace Decay
 
 	bool SkillUsage::WasUsed() const
 	{
-		auto  level = Player->GetBaseActorValue(AV(skill));
-		auto& skillData = Player->skills->data->skills[skill];
-		return level > lastKnownLevel || ((skillData.xp - lastKnownXP) > 0.5f);  // 0.5f to make sure that we only count proper XP gains (at least +1)
+		assert(skill);
+
+		auto level = skill->GetLevel();
+		auto xp = skill->GetXP();
+		return level > lastKnownLevel || ((xp - lastKnownXP) > 0.5f);  // 0.5f to make sure that we only count proper XP gains (at least +1)
 	}
 
 	void SkillUsage::SetUsed(const RE::Calendar* calendar)
 	{
-		lastKnownLevel = Player->GetBaseActorValue(AV(skill));
-		lastKnownXP = Player->skills->data->skills[skill].xp;
-		int legLevel = Player->skills->data->legendaryLevels[skill];
+		assert(skill);
+		lastKnownLevel = skill->GetLevel();
+		lastKnownXP = skill->GetXP();
+		int legLevel = skill->GetLegendaryLevel();
 		if (legLevel > lastKnownLegendaryLevel) {
 			lastKnownHighestLevel = GetStartingLevel();
 		} else {
@@ -102,18 +94,19 @@ namespace Decay
 			return false;
 		}
 
+		assert(skill);
+
 		auto cap = GetDecayCapLevel();
-		auto level = Player->GetBaseActorValue(AV(skill));
+		auto level = skill->GetLevel();
 
 		// If we're above the cap level, we should be decaying. If we're at the cap level, we can still decay if there's some XP to decay.
-		return level == cap ? Player->skills->data->skills[skill].xp > 0 : level > cap;  
+		return level == cap ? skill->GetXP() > 0 : level > cap;  
 	}
 
 	void SkillUsage::Decay(const RE::Calendar* calendar)
 	{
 		assert(isDecaying);
-
-		auto& skillData = Player->skills->data->skills[skill];
+		assert(skill);
 
 		const float daysPassed = calendar->GetDaysPassed();
 		const auto  hoursPassed = (daysPassed - daysPassedSinceLastDecay) * 24.0f;
@@ -123,7 +116,7 @@ namespace Decay
 		float legendaryDamping = GetLegendaryMult();
 
 		float mult = GetDifficultyMult() / (decay.damping * legendaryDamping);
-		float rawDecayXP = CalculateLevelThresholdXP(GetDecayTargetLevel());
+		float rawDecayXP = skill->CalculateLevelThresholdXP(GetDecayTargetLevel());
 		float fullDecayXP = rawDecayXP * mult;
 
 		// We calculate max XP that can be decayed, so that the decay rate won't exeed minDaysPerLevel (e.g. with minDaysPerLevel = 1, it would take at least 1 day to decay 1 level).
@@ -134,51 +127,54 @@ namespace Decay
 
 		float decayXP = clampedDecayXP * timeDelta;
 
-		DecaySkill(skillData, decayXP, true); // standard decay always affects levels, the levelCap in config will control the actual limit.
+		DecaySkill(decayXP, true); // standard decay always affects levels, the levelCap in config will control the actual limit.
 
-		lastKnownLevel = Player->GetBaseActorValue(AV(skill));
-		lastKnownXP = skillData.xp;
+		lastKnownLevel = skill->GetLevel();
+		lastKnownXP = skill->GetXP();
 		daysPassedSinceLastDecay = daysPassed;
 	}
 
-	void SkillUsage::DecaySkill(SkillData& skillData, float& decayXPAmount, bool decayLevels)
+	void SkillUsage::DecaySkill(float& decayXPAmount, bool decayLevels)
 	{
 		if (decayXPAmount <= 0.0f)
 			return;
 
-		float level = Player->GetBaseActorValue(AV(skill));
+		if (!skill) {
+			decayXPAmount = 0.0f;
+			return;
+		}
 
-		if (skillData.xp >= decayXPAmount) {
-			skillData.xp -= decayXPAmount;
+		float level = skill->GetLevel();
+		float xp = skill->GetXP();
+
+		if (xp >= decayXPAmount) {
+			skill->SetXP(xp - decayXPAmount);
 			decayXPAmount = 0.0f;
 		} else if (!decayLevels || level <= GetDecayCapLevel()) {
 			// We can't decay any further, so just reset XP.
-			skillData.xp = 0.0f;
+			skill->SetXP(0.0f);
 			decayXPAmount = 0.0f;
 		} else {
-			decayXPAmount -= skillData.xp;
-			const float threshold = CalculateLevelThresholdXP(static_cast<int>(level));
-			skillData.xp = max(0, threshold - 1);  // -1 to be safe, so that we won't end up in invalid state where xp == levelThreshold.
-			skillData.levelThreshold = threshold;
-			Player->ModBaseActorValue(AV(skill), -1);
-			// skillData.level is only updated after player confirms level up (in Skills Menu).
-			// Before that, skillData.level will remain at the last confirmed level, even if GetBaseAV's level is further.
-			if (level == skillData.level) {
-				skillData.level -= 1;
-			}
-			DecaySkill(skillData, decayXPAmount, decayLevels);
+			decayXPAmount -= xp;
+			const float threshold = skill->CalculateLevelThresholdXP(level);
+			skill->SetXP(max(0, threshold - 1));  // -1 to be safe, so that we won't end up in invalid state where xp == levelThreshold.
+			skill->ModLevel(-1);
+			
+			DecaySkill(decayXPAmount, decayLevels);
 		}
 	}
 
 	inline int SkillUsage::GetStartingLevel() const
 	{
-		return baselineLevel + raceSkillBonus;
+		assert(skill);
+		return skill->GetBaselineLevel() + skill->GetRaceBonus();
 	}
 
 	inline int SkillUsage::GetDecayTargetLevel() const
 	{
+		assert(skill);
 		// Level 2 is the smallest we can go to avoid Decay XP equaling zero.
-		return max(2, baselineLevel + decay.baselineLevelOffset - raceSkillBonus - decay.levelOffset);
+		return max(2, skill->GetBaselineLevel() + decay.baselineLevelOffset - skill->GetRaceBonus() - decay.levelOffset);
 	}
 
 	inline float SkillUsage::GetDifficultyMult() const
@@ -201,7 +197,8 @@ namespace Decay
 	float SkillUsage::GetGracePeriod() const
 	{
 		if (std::signbit(decay.gracePeriod)) {
-			float level = Player->GetBaseActorValue(AV(skill));
+			assert(skill);
+			float level = skill->GetLevel();
 			float target = GetDecayTargetLevel();
 
 			float ratio = target < level ? 1.0f : level / target;
@@ -229,7 +226,8 @@ namespace Decay
 
 	float SkillUsage::GetLegendaryMult() const
 	{
-		return max(1, 1 + (decay.legendarySkillDamping - 1) * Player->skills->data->legendaryLevels[skill]);
+		assert(skill);
+		return max(1, 1 + (decay.legendarySkillDamping - 1) * skill->GetLegendaryLevel());
 	}
 
 	int SkillUsage::GetDifficulty() const
@@ -258,27 +256,13 @@ namespace Decay
 		}
 
 		if (effectiveLevelCap > 0) {
-			float level = Player->GetBaseActorValue(AV(skill));
+			assert(skill);
+			float level = skill->GetLevel();
 			return level >= effectiveLevelCap ? effectiveLevelCap : GetStartingLevel();
 		} else if (effectiveLevelCap <= 0) {
 			return max(GetStartingLevel(), lastKnownHighestLevel + effectiveLevelCap);
 		} else {
 			return GetStartingLevel();
 		}
-	}
-
-	inline float SkillUsage::CalculateLevelThresholdXP(int level) const
-	{
-		if (skill == Skill::kTotal)
-			return 0.0f;
-
-		const auto av = static_cast<RE::ActorValue>(skill + 6);
-		const auto avi = RE::ActorValueList::GetActorValueInfo(av);
-
-		const auto mult = avi->skill->improveMult;
-		const auto offset = avi->skill->improveOffset;
-		const auto curve = Settings::fSkillUseCurve();
-
-		return mult * std::pow(level - 1.0f, curve) + offset;
 	}
 }

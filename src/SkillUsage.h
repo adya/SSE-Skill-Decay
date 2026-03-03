@@ -1,4 +1,5 @@
 #include "RE/C/Calendar.h"
+#include "BaseSkillData.h"
 
 namespace Decay
 {
@@ -85,8 +86,8 @@ namespace Decay
 
 	struct SkillUsage
 	{
-		void Init(Skill, const DecayConfig&);
-		void Init(Skill, DecayConfig&);
+		void Init(BaseSkillData*, const DecayConfig&);
+		void Init(BaseSkillData*, DecayConfig&);
 		void Revert();
 
 		/// Checks whether this SkillUsage has received at least one SetUsed() call.
@@ -103,15 +104,14 @@ namespace Decay
 		void Decay(const RE::Calendar*);
 
 		/// Subtracts decayXPAmount recursively, decreasing skill level as needed.
-		void DecaySkill(SkillData& skillData, float& decayXPAmount, bool decayLevels);
-
+		void DecaySkill(float& decayXPAmount, bool decayLevels);
 
 		int GetDecayCapLevel() const;
 
 		const DecayConfig& GetConfig() const { return decay; }
 
 	private:
-		Skill skill = Skill::kTotal;  // unless loaded properly, this SkillUsage is invalid and should not be used.
+		BaseSkillData* skill = nullptr;  // unless loaded properly, this SkillUsage is invalid and should not be used.
 
 		/// Days Passed when the skill was last used.
 		float daysPassedWhenLastUsed = 0;
@@ -127,14 +127,6 @@ namespace Decay
 		bool  isDecaying = false;
 		float daysPassedSinceLastDecay = 0;
 
-		/// Starting level of the skill.
-		int baselineLevel = 15;
-
-		/// Bonus that Player's race provides to the skill.
-		/// Together with baselineLevel is used to calculate XP decay rate for the skill.
-		/// Also, used to prevent decaying below (baselineLevel + raceSkillBonus).
-		int raceSkillBonus = 0;
-
 		DecayConfig decay;
 
 		int   GetStartingLevel() const;
@@ -146,8 +138,6 @@ namespace Decay
 		float GetLegendaryMult() const;
 
 		int GetDifficulty() const;
-
-		float CalculateLevelThresholdXP(int level) const;
 
 		friend bool Write(SKSE::SerializationInterface*, const SkillUsage&);
 		friend bool Read(SKSE::SerializationInterface*, SkillUsage&);
