@@ -40,6 +40,7 @@ namespace Decay
 		float      trackingRate = 0.016f;  // once every in-game minute by default
 		bool       logSkillUsage = false;
 		float      lastDaysPassed = 0;
+		bool       initialized = false;
 
 		SkillUsage       skillUsages[Skill::kTotal];
 		PlayerSkillData* defaultSkills[Skill::kTotal];

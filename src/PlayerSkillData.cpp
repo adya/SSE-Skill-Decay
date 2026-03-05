@@ -29,6 +29,7 @@ namespace Decay
 
 	int PlayerSkillData::GetRaceBonus() noexcept
 	{
+		// TODO: Maybe don't do this every tick...
 		for (const auto& boost : Player->GetRace()->data.skillBoosts) {
 			const auto skillIndex = boost.skill.underlying() - 6;
 			if (skillIndex >= 0 && skillIndex < Skill::kTotal) {

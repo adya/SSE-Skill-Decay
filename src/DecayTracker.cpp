@@ -10,6 +10,9 @@ namespace Decay
 {
 	void DecayTracker::AdvanceTime(RE::Calendar* calendar)
 	{
+		if (!initialized)
+			return;
+
 		float daysPassed = calendar->GetDaysPassed();
 		float hoursPassed = (daysPassed - lastDaysPassed) * 24.0;
 
@@ -58,6 +61,52 @@ namespace Decay
 		}
 	}
 
+	void ValidateConfig(DecayConfig& config, const DecayConfig& defaults)
+	{
+		if (config.interval <= 0) {
+			config.interval = defaults.interval;
+		}
+
+		if (config.damping <= 0) {
+			config.damping = defaults.damping;
+		}
+
+		if (config.legendarySkillDamping < 1) {
+			config.legendarySkillDamping = defaults.legendarySkillDamping;
+		}
+
+		if (config.minDaysPerLevel < 0) {
+			config.minDaysPerLevel = defaults.minDaysPerLevel;
+		}
+
+		if (config.maxDaysPerLevel < 0) {
+			config.maxDaysPerLevel = defaults.maxDaysPerLevel;
+		} else if (config.maxDaysPerLevel < config.minDaysPerLevel) {
+			config.maxDaysPerLevel = config.minDaysPerLevel + config.maxDaysPerLevel;
+		}
+
+		config.difficultyOverride = min(config.difficultyOverride, 5);
+	}
+
+	void LogSkillConfig(std::string skillName, const DecayConfig& config)
+	{
+		constexpr std::string_view difficultyNames[] = { "Novice", "Apprentice", "Adept", "Expert", "Master", "Legendary" };
+
+		logger::info("{:>11} | {:^12} | {:^14} | {:^15} | {:^12} | {:^10} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
+			skillName,
+			std::signbit(config.gracePeriod) ? "Auto" : std::format("{:.1f}h", config.gracePeriod),
+			std::format("{:.1f}h", config.interval),
+			config.baselineLevelOffset < 0 ? "Auto" : std::format("{}", config.baselineLevelOffset),
+			config.levelOffset,
+			config.difficultyOverride < 0 ? "Auto" : difficultyNames[config.difficultyOverride],
+			std::signbit(config.difficultyMult) ? "Auto" : std::format("{:.2f}", config.difficultyMult),
+			std::format("/{:.2f}", config.damping),
+			std::format("+{:.0f}%", (config.legendarySkillDamping - 1) * 100.0f),
+			config.levelCap == INT_MAX ? "Auto" : (config.levelCap == 0 ? "Current" : std::format("{}", config.levelCap)),
+			std::format("{:.1f}d", config.minDaysPerLevel),
+			std::format("{:.1f}d", config.maxDaysPerLevel));
+	}
+
 	DecayTracker::DecayTracker()
 	{
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
@@ -92,7 +141,11 @@ namespace Decay
 		// SkillText15: 184-187 // Destruction
 		// SkillText16: 190-193 // Restoration
 		// SkillText17: 196-199 // Alteration
-
+		
+		// TODO: These layers are only valid for Vanilla. They should be provided in the INI for individual skills.
+		// This is especially true for skills added with Custom Skills Framework
+		// Consider allowing multiple INI files so that they all can configs on top of one another.
+		
 		// By default we target the primary color of the bar as well as the background. Other instances control "reflection" and "shadow" effects applied to the bar.
 		DecayConfig configs[Skill::kTotal] = {
 			/* One-Handed */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText5.ShortBar.instance124", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText5.ShortBar.instance126" }),
@@ -115,30 +168,10 @@ namespace Decay
 			/* Enchanting */ DecayConfig(1.25f, { "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText0.ShortBar.instance94", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText0.ShortBar.instance96" })
 		};
 
-		// TODO: Log paths for custom skills
-
-		// TODO: Read sections for custom skill based on their names.
-
-		const std::string sections[Skill::kTotal] = {
-			"OneHanded",
-			"TwoHanded",
-			"Archery",
-			"Block",
-			"Smithing",
-			"HeavyArmor",
-			"LightArmor",
-			"Pickpocket",
-			"Lockpicking",
-			"Sneaking",
-			"Alchemy",
-			"Speech",
-			"Alteration",
-			"Conjuration",
-			"Destruction",
-			"Illusion",
-			"Restoration",
-			"Enchanting"
-		};
+		std::map<std::string, DecayConfig> customConfigs;
+		for (const auto& [skillId, skillData] : customSkills) {
+			customConfigs[skillId] = DecayConfig();
+		}
 
 		if (ini.LoadFile(options.string().c_str()) >= 0) {
 			float defaultTrackingRate = trackingRate;
@@ -151,47 +184,28 @@ namespace Decay
 			for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
 				DecayConfig& config = configs[skill];
 				DecayConfig  defaults = config;
-				const char*  section = sections[skill].c_str();
-
-				// We load settings in 3 passes:
-				// 1) Load default values for all the skills
-				// 2) Load skill-specific custom values
-				// 3) Load forced global values that all skills will use.
 
 				// Load global overwrites for all skills first.
 				ReadSettings(ini, "", config);
 
 				// Then apply skill-specific settings, if they exist.
-				ReadSettings(ini, section, config);
+				ReadSettings(ini, PlayerSkillData::DEFAULT_SKILL_NAMES[skill], config);
 
 				// Finally, apply another global overwrites that are supposed to affect all skills.
 				ReadSettings(ini, "All", config);
 
-				// Lastly we want to validate input
-				if (config.interval <= 0) {
-					config.interval = defaults.interval;
-				}
-
-				if (config.damping <= 0) {
-					config.damping = defaults.damping;
-				}
-
-				if (config.legendarySkillDamping < 1) {
-					config.legendarySkillDamping = defaults.legendarySkillDamping;
-				}
-
-				if (config.minDaysPerLevel < 0) {
-					config.minDaysPerLevel = defaults.minDaysPerLevel;
-				}
-
-				if (config.maxDaysPerLevel < 0) {
-					config.maxDaysPerLevel = defaults.maxDaysPerLevel;
-				} else if (config.maxDaysPerLevel < config.minDaysPerLevel) {
-					config.maxDaysPerLevel = config.minDaysPerLevel + config.maxDaysPerLevel;
-				}
-
-				config.difficultyOverride = min(config.difficultyOverride, 5);
+				// Lastly we want to validate input.
+				ValidateConfig(config, defaults);
 			}
+
+			for (auto& [section, config] : customConfigs) {
+				DecayConfig defaults = config;
+				ReadSettings(ini, "", config);
+				ReadSettings(ini, section.c_str(), config);
+				ReadSettings(ini, "All", config);
+				ValidateConfig(config, defaults);
+			}
+
 		} else {
 			logger::info(R"(Data\SKSE\Plugins\SkillDecay.ini not found. Default options will be used.)");
 			logger::info("");
@@ -201,27 +215,19 @@ namespace Decay
 		auto formattedRate = trackingRate < 1.0f ? std::format("{:.2f} in-game minutes", trackingRate * 60.0f) : std::format("{:.2f} in-game hours", trackingRate);
 		logger::info("Tracking Rate: once every {}", formattedRate);
 
-		constexpr std::string_view difficultyNames[] = { "Novice", "Apprentice", "Adept", "Expert", "Master", "Legendary" };
-
 		logger::info("{:>11} | {:^12} | {:^14} | {:^15} | {:^12} | {:^10} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
 			"Skill", "Grace Period", "Decay Duration", "Baseline Offset", "Extra Offset", "Difficulty", "Difficulty Mult", "Damping", "Legendary Damping", "Decay Cap", "Min Decay Days", "Max Decay Days");
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
 			skillUsages[skill].Init(defaultSkills[skill], configs[skill]);
-			const auto name = SkillName(skill);
-			logger::info("{:>11} | {:^12} | {:^14} | {:^15} | {:^12} | {:^10} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
-				name,
-				std::signbit(configs[skill].gracePeriod) ? "Auto" : std::format("{:.1f}h", configs[skill].gracePeriod),
-				std::format("{:.1f}h", configs[skill].interval),
-				configs[skill].baselineLevelOffset < 0 ? "Auto" : std::format("{}", configs[skill].baselineLevelOffset),
-				configs[skill].levelOffset,
-				configs[skill].difficultyOverride < 0 ? "Auto" : difficultyNames[configs[skill].difficultyOverride],
-				std::signbit(configs[skill].difficultyMult) ? "Auto" : std::format("{:.2f}", configs[skill].difficultyMult),
-				std::format("/{:.2f}", configs[skill].damping),
-				std::format("+{:.0f}%", (configs[skill].legendarySkillDamping - 1) * 100.0f),
-				configs[skill].levelCap == INT_MAX ? "Auto" : (configs[skill].levelCap == 0 ? "Current" : std::format("{}", configs[skill].levelCap)),
-				std::format("{:.1f}d", configs[skill].minDaysPerLevel),
-				std::format("{:.1f}d", configs[skill].maxDaysPerLevel));
+			LogSkillConfig(SkillName(skill), configs[skill]);
 		}
+
+		for (const auto& [skillId, config] : customConfigs) {
+			customSkillUsages[skillId].Init(customSkills[skillId], config);
+			LogSkillConfig(skillId, config);
+		}
+
+		initialized = true;
 	}
 
 	void DecayTracker::ApplyTint(RE::GFxMovieView* movie) const
@@ -229,6 +235,7 @@ namespace Decay
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
 			const auto& usage = skillUsages[skill];
 			const auto& config = usage.GetConfig();
+
 			if (usage.IsDecaying()) {
 				//auto r = config.decayTint.colorData.channels.red;
 				//auto g = config.decayTint.colorData.channels.green;

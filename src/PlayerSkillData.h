@@ -25,7 +25,6 @@ namespace Decay
 
 		Skill               skill;
 		RE::ActorValueInfo* avi;
-		int                 raceBonus;
 
 		PlayerSkillData() = delete;
 		PlayerSkillData(Skill);
