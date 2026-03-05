@@ -63,7 +63,7 @@ namespace Decay
 			return false;
 
 		auto& tracker = DecayTracker::GetInstance();
-		
+
 		std::map<RE::FormID, int> raceBonusesMap{};
 
 		if (raceBonuses && raceBonusesCount > 0) {

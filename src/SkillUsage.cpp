@@ -100,7 +100,7 @@ namespace Decay
 		auto level = skill->GetLevel();
 
 		// If we're above the cap level, we should be decaying. If we're at the cap level, we can still decay if there's some XP to decay.
-		return level == cap ? skill->GetXP() > 0 : level > cap;  
+		return level == cap ? skill->GetXP() > 0 : level > cap;
 	}
 
 	void SkillUsage::Decay(const RE::Calendar* calendar)
@@ -127,7 +127,7 @@ namespace Decay
 
 		float decayXP = clampedDecayXP * timeDelta;
 
-		DecaySkill(decayXP, true); // standard decay always affects levels, the levelCap in config will control the actual limit.
+		DecaySkill(decayXP, true);  // standard decay always affects levels, the levelCap in config will control the actual limit.
 
 		lastKnownLevel = skill->GetLevel();
 		lastKnownXP = skill->GetXP();
@@ -159,7 +159,7 @@ namespace Decay
 			const float threshold = skill->CalculateLevelThresholdXP(level);
 			skill->SetXP(max(0, threshold - 1));  // -1 to be safe, so that we won't end up in invalid state where xp == levelThreshold.
 			skill->ModLevel(-1);
-			
+
 			DecaySkill(decayXPAmount, decayLevels);
 		}
 	}

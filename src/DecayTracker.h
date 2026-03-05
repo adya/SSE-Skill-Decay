@@ -1,7 +1,7 @@
 #pragma once
-#include "SkillUsage.h"
 #include "CustomSkillData.h"
 #include "PlayerSkillData.h"
+#include "SkillUsage.h"
 
 namespace Decay
 {
@@ -37,10 +37,10 @@ namespace Decay
 
 	private:
 		/// Hours between SkillUsage updates.
-		float      trackingRate = 0.016f;  // once every in-game minute by default
-		bool       logSkillUsage = false;
-		float      lastDaysPassed = 0;
-		bool       initialized = false;
+		float trackingRate = 0.016f;  // once every in-game minute by default
+		bool  logSkillUsage = false;
+		float lastDaysPassed = 0;
+		bool  initialized = false;
 
 		SkillUsage       skillUsages[Skill::kTotal];
 		PlayerSkillData* defaultSkills[Skill::kTotal];

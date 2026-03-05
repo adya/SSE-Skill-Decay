@@ -1,21 +1,21 @@
 #pragma once
-#include "Options.h"
 #include "BaseSkillData.h"
+#include "Options.h"
 
 namespace Decay
 {
 	struct CustomSkillData : BaseSkillData
 	{
-		std::string skillId;
+		std::string         skillId;
 		RE::ActorValueInfo* avi;
 
 		RE::TESGlobal* levelGlobal;
 		RE::TESGlobal* xpGlobal;
-		bool xpNormalized;
+		bool           xpNormalized;
 		RE::TESGlobal* legendaryGlobal;
-		
+
 		std::map<RE::FormID, int> raceBonuses;
-		
+
 		CustomSkillData() = delete;
 		CustomSkillData(std::string skillId, RE::ActorValueInfo* avi, RE::TESGlobal* level, RE::TESGlobal* xp, bool xpNormalized, RE::TESGlobal* legendary, std::map<RE::FormID, int>& raceBonuses) :
 			skillId(std::move(skillId)),
@@ -24,7 +24,7 @@ namespace Decay
 			xpGlobal(xp),
 			xpNormalized(xpNormalized),
 			legendaryGlobal(legendary),
-			raceBonuses(std::move(raceBonuses)) {};
+			raceBonuses(std::move(raceBonuses)){};
 
 		std::string_view    GetName() const noexcept override;
 		int                 GetLevel() const noexcept override;

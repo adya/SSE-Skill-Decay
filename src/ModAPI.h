@@ -1,6 +1,6 @@
 #pragma once
-#include <memory>
 #include "../include/SkillDecay_API.h"
+#include <memory>
 
 namespace Decay
 {

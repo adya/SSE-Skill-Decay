@@ -1,5 +1,5 @@
-#include "RE/C/Calendar.h"
 #include "BaseSkillData.h"
+#include "RE/C/Calendar.h"
 
 namespace Decay
 {

@@ -1,7 +1,7 @@
 #include "DecayTracker.h"
+#include "CLIBUtil/distribution.hpp"
 #include "CLIBUtil/simpleINI.hpp"
 #include "CLIBUtil/string.hpp"
-#include "CLIBUtil/distribution.hpp"
 #include "Options.h"
 
 #define Inc(skill) \
@@ -197,10 +197,9 @@ namespace Decay
 
 		auto files = clib_util::distribution::get_configs_paths(R"(Data\SKSE\Plugins\SkillDecay)");
 
-		
 		std::map<std::string, PartialDecayConfig> configs{};
-		PartialDecayConfig                        defaultConfig{}; // no sections
-		PartialDecayConfig                        overwriteConfig{}; // [All]
+		PartialDecayConfig                        defaultConfig{};    // no sections
+		PartialDecayConfig                        overwriteConfig{};  // [All]
 
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
 			configs[PlayerSkillData::DEFAULT_SKILL_NAMES[skill]] = PartialDecayConfig();
@@ -230,7 +229,6 @@ namespace Decay
 			ini.SetUnicode();
 			ini.SetMultiKey(false);
 
-
 			if (ini.LoadFile(path.c_str()) >= 0) {
 				float defaultTrackingRate = trackingRate;
 				trackingRate = ini.GetDoubleValue("", "fTrackingRate", trackingRate);
@@ -249,9 +247,9 @@ namespace Decay
 			}
 		}
 
-		// TODO: We can't have built-in defaults for ui layers as it will depend on whether or not there is a CustomSkillsFramework. 
+		// TODO: We can't have built-in defaults for ui layers as it will depend on whether or not there is a CustomSkillsFramework.
 		// So these configs will be provided in INI files.
-		// 
+		//
 		// These are valid indices for instances present in each SkillText's ShortBar in Vanilla skills
 		// SkillText0: 94-97 // Enchanting
 		// SkillText1: 100-103 // Smithing
@@ -271,7 +269,6 @@ namespace Decay
 		// SkillText15: 184-187 // Destruction
 		// SkillText16: 190-193 // Restoration
 		// SkillText17: 196-199 // Alteration
-
 
 		DecayConfig defaultConfigs[Skill::kTotal] = {
 			/* One-Handed */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText5.ShortBar.instance124", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText5.ShortBar.instance126" }),
@@ -369,9 +366,9 @@ namespace Decay
 
 		auto skill = new CustomSkillData(skillId, avi, levelGlobal, xpGlobal, xpNormalized, legendaryGlobal, raceBonuses);
 		customSkills[skillId] = skill;
-		
+
 		auto usage = SkillUsage();
-		usage.Init(skill, DecayConfig()); // TODO: Config needs to be read from file.
+		usage.Init(skill, DecayConfig());  // TODO: Config needs to be read from file.
 		customSkillUsages[skillId] = usage;
 
 		return true;
