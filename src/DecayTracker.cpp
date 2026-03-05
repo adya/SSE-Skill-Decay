@@ -1,6 +1,7 @@
 #include "DecayTracker.h"
 #include "CLIBUtil/simpleINI.hpp"
 #include "CLIBUtil/string.hpp"
+#include "CLIBUtil/distribution.hpp"
 #include "Options.h"
 
 #define Inc(skill) \
@@ -22,42 +23,118 @@ namespace Decay
 		}
 	}
 
-	void ReadSettings(const CSimpleIniA& ini, const char* section, DecayConfig& config)
+	struct PartialDecayConfig
 	{
-		if (ini.SectionExists(section)) {
-			config.gracePeriod = ini.GetDoubleValue(section, "fDecayGracePeriod", config.gracePeriod);
-			config.interval = ini.GetDoubleValue(section, "fDecayInterval", config.interval);
-			config.levelOffset = ini.GetLongValue(section, "iDecayLevelOffset", config.levelOffset);
-			config.baselineLevelOffset = ini.GetLongValue(section, "iBaselineLevelOffset", config.baselineLevelOffset);
-			config.damping = ini.GetDoubleValue(section, "fDecayXPDamping", config.damping);
-			config.difficultyMult = ini.GetDoubleValue(section, "fDecayXPDifficultyMult", config.difficultyMult);
-			config.levelCap = ini.GetLongValue(section, "iDecayLevelCap", config.levelCap);
-			config.legendarySkillDamping = ini.GetDoubleValue(section, "fLegendarySkillXPDamping", config.legendarySkillDamping);
-			config.minDaysPerLevel = ini.GetDoubleValue(section, "fMinDaysPerLevel", config.minDaysPerLevel);
-			config.maxDaysPerLevel = ini.GetDoubleValue(section, "fMaxDaysPerLevel", config.maxDaysPerLevel);
-			config.difficultyOverride = ini.GetLongValue(section, "iDifficulty", config.difficultyOverride);
+		std::optional<float>                    gracePeriod;
+		std::optional<float>                    interval;
+		std::optional<int>                      baselineLevelOffset;
+		std::optional<int>                      levelOffset;
+		std::optional<float>                    difficultyMult;
+		std::optional<int>                      difficultyOverride;
+		std::optional<float>                    damping;
+		std::optional<float>                    legendarySkillDamping;
+		std::optional<int>                      levelCap;
+		std::optional<float>                    minDaysPerLevel;
+		std::optional<float>                    maxDaysPerLevel;
+		std::optional<std::vector<std::string>> uiLayers;
+		std::optional<RE::GColor>               decayTint;
+		std::optional<RE::GColor>               normalTint;
 
-			std::string color = ini.GetValue(section, "cDecayTint", "");
-
-			if (!color.empty()) {
-				config.decayTint = clib_util::string::to_color(color, config.decayTint);
+		void ApplyTo(DecayConfig& config) const
+		{
+			if (gracePeriod.has_value()) {
+				config.gracePeriod = gracePeriod.value();
 			}
-
-			color = ini.GetValue(section, "cTint", "");
-
-			if (!color.empty()) {
-				config.normalTint = clib_util::string::to_color(color, config.normalTint);
+			if (interval.has_value()) {
+				config.interval = interval.value();
 			}
-
-			std::string rawLayers = ini.GetValue(section, "sUILayers", "");
-			auto        layers = clib_util::string::split(rawLayers, ",");
-			for (auto& layer : layers) {
-				clib_util::string::trim(layer);
+			if (baselineLevelOffset.has_value()) {
+				config.baselineLevelOffset = baselineLevelOffset.value();
 			}
-
-			if (!layers.empty()) {
-				config.uiLayers = std::move(layers);
+			if (levelOffset.has_value()) {
+				config.levelOffset = levelOffset.value();
 			}
+			if (difficultyMult.has_value()) {
+				config.difficultyMult = difficultyMult.value();
+			}
+			if (difficultyOverride.has_value()) {
+				config.difficultyOverride = difficultyOverride.value();
+			}
+			if (damping.has_value()) {
+				config.damping = damping.value();
+			}
+			if (legendarySkillDamping.has_value()) {
+				config.legendarySkillDamping = legendarySkillDamping.value();
+			}
+			if (levelCap.has_value()) {
+				config.levelCap = levelCap.value();
+			}
+			if (minDaysPerLevel.has_value()) {
+				config.minDaysPerLevel = minDaysPerLevel.value();
+			}
+			if (maxDaysPerLevel.has_value()) {
+				config.maxDaysPerLevel = maxDaysPerLevel.value();
+			}
+			if (decayTint.has_value()) {
+				config.decayTint = decayTint.value();
+			}
+			if (normalTint.has_value()) {
+				config.normalTint = normalTint.value();
+			}
+			if (uiLayers.has_value()) {
+				config.uiLayers = uiLayers.value();
+			}
+		}
+	};
+
+	void ReadSettings(const CSimpleIniA& ini, const char* section, PartialDecayConfig& config)
+	{
+		if (!ini.SectionExists(section)) {
+			return;
+		}
+
+		if (ini.KeyExists(section, "fDecayGracePeriod"))
+			config.gracePeriod = ini.GetDoubleValue(section, "fDecayGracePeriod");
+		if (ini.KeyExists(section, "fDecayInterval"))
+			config.interval = ini.GetDoubleValue(section, "fDecayInterval");
+		if (ini.KeyExists(section, "iDecayLevelOffset"))
+			config.levelOffset = ini.GetLongValue(section, "iDecayLevelOffset");
+		if (ini.KeyExists(section, "iBaselineLevelOffset"))
+			config.baselineLevelOffset = ini.GetLongValue(section, "iBaselineLevelOffset");
+		if (ini.KeyExists(section, "fDecayXPDamping"))
+			config.damping = ini.GetDoubleValue(section, "fDecayXPDamping");
+		if (ini.KeyExists(section, "fDecayXPDifficultyMult"))
+			config.difficultyMult = ini.GetDoubleValue(section, "fDecayXPDifficultyMult");
+		if (ini.KeyExists(section, "iDecayLevelCap"))
+			config.levelCap = ini.GetLongValue(section, "iDecayLevelCap");
+		if (ini.KeyExists(section, "fLegendarySkillXPDamping"))
+			config.legendarySkillDamping = ini.GetDoubleValue(section, "fLegendarySkillXPDamping");
+		if (ini.KeyExists(section, "fMinDaysPerLevel"))
+			config.minDaysPerLevel = ini.GetDoubleValue(section, "fMinDaysPerLevel");
+		if (ini.KeyExists(section, "fMaxDaysPerLevel"))
+			config.maxDaysPerLevel = ini.GetDoubleValue(section, "fMaxDaysPerLevel");
+		if (ini.KeyExists(section, "iDifficulty"))
+			config.difficultyOverride = ini.GetLongValue(section, "iDifficulty");
+		std::string color = ini.GetValue(section, "cDecayTint", "");
+
+		if (!color.empty()) {
+			config.decayTint = clib_util::string::to_color(color);
+		}
+
+		color = ini.GetValue(section, "cTint", "");
+
+		if (!color.empty()) {
+			config.normalTint = clib_util::string::to_color(color);
+		}
+
+		std::string rawLayers = ini.GetValue(section, "sUILayers", "");
+		auto        layers = clib_util::string::split(rawLayers, ",");
+		for (auto& layer : layers) {
+			clib_util::string::trim(layer);
+		}
+
+		if (!layers.empty()) {
+			config.uiLayers = std::move(layers);
 		}
 	}
 
@@ -117,12 +194,65 @@ namespace Decay
 	void DecayTracker::LoadSettings()
 	{
 		logger::info("{:*^30}", " OPTIONS ");
-		std::filesystem::path options = R"(Data\SKSE\Plugins\SkillDecay.ini)";
-		CSimpleIniA           ini{};
-		ini.SetUnicode();
-		ini.SetMultiKey(false);
 
-		// These are valid indices for instances present in each SkillText's ShortBar.
+		auto files = clib_util::distribution::get_configs_paths(R"(Data\SKSE\Plugins\SkillDecay)");
+
+		
+		std::map<std::string, PartialDecayConfig> configs{};
+		PartialDecayConfig                        defaultConfig{}; // no sections
+		PartialDecayConfig                        overwriteConfig{}; // [All]
+
+		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
+			configs[PlayerSkillData::DEFAULT_SKILL_NAMES[skill]] = PartialDecayConfig();
+		}
+
+		for (const auto& [skillId, skillData] : customSkills) {
+			if (!configs.contains(skillId)) {
+				configs[skillId] = PartialDecayConfig();
+			}
+		}
+
+		if (files.empty()) {
+			logger::info(R"(No configs found in Data\SKSE\Plugins\SkillDecay\ folder. Default options will be used.)");
+		}
+
+		std::filesystem::path legacyConfigPath = R"(Data\SKSE\Plugins\SkillDecay.ini)";
+		if (std::filesystem::exists(legacyConfigPath)) {
+			files.push_back(legacyConfigPath);  // Support legacy config.
+		}
+
+		logger::info("{} matching inis found", files.size());
+
+		for (const auto& path : files) {
+			logger::info("\tINI : {}", path.string());
+
+			CSimpleIniA ini{};
+			ini.SetUnicode();
+			ini.SetMultiKey(false);
+
+
+			if (ini.LoadFile(path.c_str()) >= 0) {
+				float defaultTrackingRate = trackingRate;
+				trackingRate = ini.GetDoubleValue("", "fTrackingRate", trackingRate);
+				logSkillUsage = ini.GetBoolValue("", "bLogSkillUsage", logSkillUsage);
+				if (trackingRate <= 0) {
+					trackingRate = defaultTrackingRate;
+				}
+
+				// Load default and overwrite global configs that will affect all skills.
+				ReadSettings(ini, "", defaultConfig);
+				ReadSettings(ini, "All", overwriteConfig);
+
+				for (auto& [section, config] : configs) {
+					ReadSettings(ini, section.c_str(), config);
+				}
+			}
+		}
+
+		// TODO: We can't have built-in defaults for ui layers as it will depend on whether or not there is a CustomSkillsFramework. 
+		// So these configs will be provided in INI files.
+		// 
+		// These are valid indices for instances present in each SkillText's ShortBar in Vanilla skills
 		// SkillText0: 94-97 // Enchanting
 		// SkillText1: 100-103 // Smithing
 		// SkillText2: 106-109 // Heavy Armor
@@ -141,13 +271,9 @@ namespace Decay
 		// SkillText15: 184-187 // Destruction
 		// SkillText16: 190-193 // Restoration
 		// SkillText17: 196-199 // Alteration
-		
-		// TODO: These layers are only valid for Vanilla. They should be provided in the INI for individual skills.
-		// This is especially true for skills added with Custom Skills Framework
-		// Consider allowing multiple INI files so that they all can configs on top of one another.
-		
-		// By default we target the primary color of the bar as well as the background. Other instances control "reflection" and "shadow" effects applied to the bar.
-		DecayConfig configs[Skill::kTotal] = {
+
+
+		DecayConfig defaultConfigs[Skill::kTotal] = {
 			/* One-Handed */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText5.ShortBar.instance124", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText5.ShortBar.instance126" }),
 			/* Two-Handed */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText4.ShortBar.instance118", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText4.ShortBar.instance120" }),
 			/* Archery */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText6.ShortBar.instance130", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText6.ShortBar.instance132" }),
@@ -168,49 +294,6 @@ namespace Decay
 			/* Enchanting */ DecayConfig(1.25f, { "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText0.ShortBar.instance94", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText0.ShortBar.instance96" })
 		};
 
-		std::map<std::string, DecayConfig> customConfigs;
-		for (const auto& [skillId, skillData] : customSkills) {
-			customConfigs[skillId] = DecayConfig();
-		}
-
-		if (ini.LoadFile(options.string().c_str()) >= 0) {
-			float defaultTrackingRate = trackingRate;
-			trackingRate = ini.GetDoubleValue("", "fTrackingRate", trackingRate);
-			logSkillUsage = ini.GetBoolValue("", "bLogSkillUsage", logSkillUsage);
-			if (trackingRate <= 0) {
-				trackingRate = defaultTrackingRate;
-			}
-
-			for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
-				DecayConfig& config = configs[skill];
-				DecayConfig  defaults = config;
-
-				// Load global overwrites for all skills first.
-				ReadSettings(ini, "", config);
-
-				// Then apply skill-specific settings, if they exist.
-				ReadSettings(ini, PlayerSkillData::DEFAULT_SKILL_NAMES[skill], config);
-
-				// Finally, apply another global overwrites that are supposed to affect all skills.
-				ReadSettings(ini, "All", config);
-
-				// Lastly we want to validate input.
-				ValidateConfig(config, defaults);
-			}
-
-			for (auto& [section, config] : customConfigs) {
-				DecayConfig defaults = config;
-				ReadSettings(ini, "", config);
-				ReadSettings(ini, section.c_str(), config);
-				ReadSettings(ini, "All", config);
-				ValidateConfig(config, defaults);
-			}
-
-		} else {
-			logger::info(R"(Data\SKSE\Plugins\SkillDecay.ini not found. Default options will be used.)");
-			logger::info("");
-		}
-
 		logger::info("{}", logSkillUsage ? "Logging Skill Usage enabled" : "Logging Skill Usage disabled");
 		auto formattedRate = trackingRate < 1.0f ? std::format("{:.2f} in-game minutes", trackingRate * 60.0f) : std::format("{:.2f} in-game hours", trackingRate);
 		logger::info("Tracking Rate: once every {}", formattedRate);
@@ -218,11 +301,26 @@ namespace Decay
 		logger::info("{:>11} | {:^12} | {:^14} | {:^15} | {:^12} | {:^10} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
 			"Skill", "Grace Period", "Decay Duration", "Baseline Offset", "Extra Offset", "Difficulty", "Difficulty Mult", "Damping", "Legendary Damping", "Decay Cap", "Min Decay Days", "Max Decay Days");
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
-			skillUsages[skill].Init(defaultSkills[skill], configs[skill]);
-			LogSkillConfig(SkillName(skill), configs[skill]);
+			auto& config = defaultConfigs[skill];
+			defaultConfig.ApplyTo(config);
+			configs[PlayerSkillData::DEFAULT_SKILL_NAMES[skill]].ApplyTo(config);
+			overwriteConfig.ApplyTo(config);
+
+			ValidateConfig(config, defaultConfigs[skill]);
+
+			skillUsages[skill].Init(defaultSkills[skill], config);
+			LogSkillConfig(SkillName(skill), config);
 		}
 
-		for (const auto& [skillId, config] : customConfigs) {
+		DecayConfig empty{};
+		for (const auto& [skillId, _] : customSkills) {
+			DecayConfig config{};
+			defaultConfig.ApplyTo(config);
+			configs[skillId].ApplyTo(config);
+			overwriteConfig.ApplyTo(config);
+
+			ValidateConfig(config, empty);
+
 			customSkillUsages[skillId].Init(customSkills[skillId], config);
 			LogSkillConfig(skillId, config);
 		}
