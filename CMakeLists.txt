@@ -10,6 +10,26 @@ set(VR_VERSION 1415)
 option(COPY_BUILD "Copy the build output to the Skyrim directory." TRUE)
 option(BUILD_SKYRIMAE "Build for Skyrim AE" OFF)
 
+# ---- Project ----
+
+project(
+	${NAME}
+	VERSION ${VERSION}
+	LANGUAGES CXX
+)
+
+configure_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/cmake/Version.h.in
+	${CMAKE_CURRENT_BINARY_DIR}/include/Version.h
+	@ONLY
+)
+
+configure_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/cmake/version.rc.in
+	${CMAKE_CURRENT_BINARY_DIR}/version.rc
+	@ONLY
+)
+
 # ---- Cache build vars ----
 
 macro(set_from_environment VARIABLE)
@@ -23,7 +43,7 @@ macro(find_commonlib_path)
 		# Check extern
 		find_path(CommonLibPath
 		include/REL/Relocation.h
-		PATHS extern/${CommonLibName})
+		PATHS ${PROJECT_SOURCE_DIR}/extern/${CommonLibName})
 		if (${CommonLibPath} STREQUAL "CommonLibPath-NOTFOUND")
 			#Check path
 			set_from_environment(${CommonLibName}Path)
@@ -46,6 +66,7 @@ else()
 	set_from_environment(Skyrim64Path)
 	set(SkyrimPath ${Skyrim64Path})
 	set(SkyrimVersion "Skyrim SSE")
+	set(VERSION ${VERSION}.${SE_VERSION})
 endif()
 find_commonlib_path()
 message(
@@ -65,26 +86,6 @@ endif ()
 
 set(Boost_USE_STATIC_RUNTIME OFF CACHE BOOL "")
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "")
-
-# ---- Project ----
-
-project(
-	${NAME}
-	VERSION ${VERSION}
-	LANGUAGES CXX
-)
-
-configure_file(
-	${CMAKE_CURRENT_SOURCE_DIR}/cmake/Version.h.in
-	${CMAKE_CURRENT_BINARY_DIR}/include/Version.h
-	@ONLY
-)
-
-configure_file(
-	${CMAKE_CURRENT_SOURCE_DIR}/cmake/version.rc.in
-	${CMAKE_CURRENT_BINARY_DIR}/version.rc
-	@ONLY
-)
 
 # ---- Include guards ----
 
@@ -121,11 +122,12 @@ if (DEFINED CommonLibPath AND NOT ${CommonLibPath} STREQUAL "" AND IS_DIRECTORY 
 else ()
 	message(
 		FATAL_ERROR
-		"Variable ${CommonLibName}Path is not set or in extern/."
+		"Variable ${CommonLibName}Path is not set."
 	)
 endif()
 
 set(CLIB_UTIL_INCLUDE_DIRS "extern/CLibUtil/include")
+find_path(SKSE_MCP_INCLUDE_DIRS "SKSEMCP/SKSEMenuFramework.hpp")
 
 # ---- Auto-discover all source and header files ----
 
@@ -136,31 +138,34 @@ file(GLOB_RECURSE ALL_SRC_FILES CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp
 )
 
+# ---- Auto-discover all public header files ----
+
+file(GLOB_RECURSE PUBLIC_HEADER_FILES CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp
+)
+
 # ---- Visual Studio folder grouping ----
 
 # All files go under "Source Files", preserving src/ substructure
-# foreach(source_file ${ALL_SRC_FILES})
-#     file(RELATIVE_PATH rel_path "${CMAKE_CURRENT_SOURCE_DIR}/src" "${source_file}")
-#     get_filename_component(dir "${rel_path}" PATH)
-#     string(REPLACE "/" "\\" subfolder "${dir}")
-#     source_group("Source Files\\${subfolder}" FILES "${source_file}")
-# endforeach()
-
-# Split manually by extension
-set(HEADER_FILES "")
-set(SOURCE_FILES "")
-
-foreach(file ${ALL_SRC_FILES})
-    get_filename_component(ext "${file}" EXT)
-    if(ext STREQUAL ".h" OR ext STREQUAL ".hpp")
-        list(APPEND HEADER_FILES "${file}")
-    else()
-        list(APPEND SOURCE_FILES "${file}")
-    endif()
+foreach(source_file ${ALL_SRC_FILES})
+    file(RELATIVE_PATH rel_path "${CMAKE_CURRENT_SOURCE_DIR}/src" "${source_file}")
+    get_filename_component(dir "${rel_path}" PATH)
+    string(REPLACE "/" "\\" subfolder "${dir}")
+    source_group("Source Files\\${subfolder}" FILES "${source_file}")
 endforeach()
 
-source_group("Header Files" FILES ${HEADER_FILES})
-source_group("Source Files" FILES ${SOURCE_FILES})
+# Public headers go under "Header Files", preserving include/ substructure
+foreach(header_file ${PUBLIC_HEADER_FILES})
+    file(RELATIVE_PATH rel_path "${CMAKE_CURRENT_SOURCE_DIR}/include" "${header_file}")
+    get_filename_component(dir "${rel_path}" PATH)
+    string(REPLACE "/" "\\" subfolder "${dir}")
+    if(subfolder)
+        source_group("Header Files\\${subfolder}" FILES "${header_file}")
+    else()
+        source_group("Header Files" FILES "${header_file}")
+    endif()
+endforeach()
 
 # Remove PCH files from ALL_SRC_FILES
 list(FILTER ALL_SRC_FILES EXCLUDE REGEX "src[/\\\\]PCH\\.(cpp|h|hpp)$")
@@ -170,9 +175,7 @@ set(PCH_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PCH.cpp
 )
 
-list(APPEND HEADER_FILES ${CMAKE_CURRENT_BINARY_DIR}/include/Version.h)
-
-source_group("Header Files" FILES ${HEADER_FILES})
+source_group("Header Files" FILES ${CMAKE_CURRENT_BINARY_DIR}/include/Version.h)
 
 source_group("Precompile Header File" FILES ${PCH_FILES})
 
@@ -181,14 +184,15 @@ source_group("Resource Files" FILES ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
 # ---- Create DLL ----
 
 add_library(
-	${PROJECT_NAME}
-	SHARED
-	${ALL_SRC_FILES}
+    ${PROJECT_NAME}
+    SHARED
+    ${ALL_SRC_FILES}
 	${PCH_FILES}
-	${CMAKE_CURRENT_BINARY_DIR}/include/Version.h
-	${CMAKE_CURRENT_BINARY_DIR}/version.rc
-	.clang-format
-	.editorconfig
+    ${PUBLIC_HEADER_FILES}
+    ${CMAKE_CURRENT_BINARY_DIR}/include/Version.h
+    ${CMAKE_CURRENT_BINARY_DIR}/version.rc
+    .clang-format
+    .editorconfig
 )
 
 target_compile_features(
@@ -204,11 +208,14 @@ target_compile_definitions(
 )
 
 target_include_directories(
-	${PROJECT_NAME}
-	PRIVATE
-		${CMAKE_CURRENT_BINARY_DIR}/include
+    ${PROJECT_NAME}
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src
-		${CLIB_UTIL_INCLUDE_DIRS}
+        ${SKSE_MCP_INCLUDE_DIRS}
+        ${CLIB_UTIL_INCLUDE_DIRS}
 )
 
 target_link_libraries(
@@ -218,9 +225,9 @@ target_link_libraries(
 )
 
 target_precompile_headers(
-	${PROJECT_NAME}
-	PRIVATE
-		src/PCH.h
+    ${PROJECT_NAME}
+    PRIVATE
+        src/PCH.h
 )
 
 if (MSVC)
@@ -255,12 +262,8 @@ if (COPY_BUILD)
 		add_custom_command(
 			TARGET ${PROJECT_NAME}
 			POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E copy 
-				$<TARGET_FILE:${PROJECT_NAME}> 
-				${SkyrimPath}/Data/SKSE/Plugins/
-			COMMAND ${CMAKE_COMMAND} -E copy 
-				$<TARGET_PDB_FILE:${PROJECT_NAME}> 
-				${SkyrimPath}/Data/SKSE/Plugins/
+			COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> ${SkyrimPath}/Data/SKSE/Plugins/
+			COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PDB_FILE:${PROJECT_NAME}> ${SkyrimPath}/Data/SKSE/Plugins/
 		)
 	else ()
 		message(

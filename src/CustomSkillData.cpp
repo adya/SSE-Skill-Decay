@@ -41,9 +41,9 @@ namespace Decay
 		}
 	}
 
-	int CustomSkillData::GetRaceBonus() noexcept
+	void CustomSkillData::UpdateRaceBonus() noexcept
 	{
-		return raceBonuses[Player->GetRace()->formID];
+		raceBonus = raceBonuses[Player->GetRace()->formID];
 	}
 
 	int CustomSkillData::GetLegendaryLevel() const noexcept

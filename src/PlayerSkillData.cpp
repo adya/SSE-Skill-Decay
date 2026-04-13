@@ -27,19 +27,18 @@ namespace Decay
 		Player->skills->data->skills[skill].xp = xp;
 	}
 
-	int PlayerSkillData::GetRaceBonus() noexcept
+	void PlayerSkillData::UpdateRaceBonus() noexcept
 	{
-		// TODO: Maybe don't do this every tick...
+		raceBonus = 0;
 		for (const auto& boost : Player->GetRace()->data.skillBoosts) {
 			const auto skillIndex = boost.skill.underlying() - 6;
 			if (skillIndex >= 0 && skillIndex < Skill::kTotal) {
 				if (static_cast<Skill>(skillIndex) == skill) {
-					return boost.bonus;
+					raceBonus = boost.bonus;
+					return;
 				}
 			}
 		}
-
-		return 0;
 	}
 
 	int PlayerSkillData::GetLegendaryLevel() const noexcept

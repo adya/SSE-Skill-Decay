@@ -6,10 +6,18 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 {
 	switch (a_message->type) {
 	case SKSE::MessagingInterface::kPostLoad:
+		
+		SKSE::GetMessagingInterface()->Dispatch(
+			Decay::MESSAGE_TYPE::kSkillDecayInterface,
+			Decay::DecayInterface::GetSingleton(),
+			sizeof(Decay::DecayInterface),
+			nullptr);
 		Decay::Install();
+		Decay::DecayTracker::Register();
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
-		Decay::DecayTracker::Register();
+		Decay::DecayTracker::GetInstance().LoadDefaultSkills();
+		Decay::DecayTracker::GetInstance().LoadSettings();
 		break;
 	case SKSE::MessagingInterface::kPostLoadGame:
 	case SKSE::MessagingInterface::kNewGame:
@@ -24,7 +32,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []() {
 	SKSE::PluginVersionData v;
 	v.PluginVersion(Version::MAJOR);
-	v.PluginName("SkillDelay");
+	v.PluginName("SkillDecay");
 	v.AuthorName("sasnikol");
 	v.UsesAddressLibrary();
 	v.UsesUpdatedStructs();
@@ -36,7 +44,7 @@ extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []() {
 extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a_skse, SKSE::PluginInfo* a_info)
 {
 	a_info->infoVersion = SKSE::PluginInfo::kVersion;
-	a_info->name = "SkillDelay";
+	a_info->name = "SkillDecay";
 	a_info->version = Version::MAJOR;
 
 	if (a_skse->IsEditor()) {
@@ -45,7 +53,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a
 	}
 
 	const auto ver = a_skse->RuntimeVersion();
-	if (ver < SKSE::RUNTIME_SSE_1_5_39) {
+	if (ver < SKSE::RUNTIME_SSE_LATEST) {
 		logger::critical(FMT_STRING("Unsupported runtime version {}"), ver.string());
 		return false;
 	}

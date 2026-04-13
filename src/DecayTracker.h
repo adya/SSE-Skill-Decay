@@ -20,6 +20,7 @@ namespace Decay
 
 		void AdvanceTime(RE::Calendar* calendar);
 		void LoadSettings();
+		void LoadDefaultSkills();
 
 		void ApplyTint(RE::GFxMovieView*) const;
 
@@ -42,13 +43,13 @@ namespace Decay
 		float lastDaysPassed = 0;
 		bool  initialized = false;
 
+		DecayConfig      skillConfigs[Skill::kTotal];
 		SkillUsage       skillUsages[Skill::kTotal];
 		PlayerSkillData* defaultSkills[Skill::kTotal];
 
+		std::map<std::string, DecayConfig>      customSkillConfigs{};
 		std::map<std::string, SkillUsage>       customSkillUsages{};
 		std::map<std::string, CustomSkillData*> customSkills{};
-
-		DecayTracker();
 
 		void UpdateSkillUsage(RE::Calendar*);
 

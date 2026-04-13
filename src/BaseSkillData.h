@@ -23,7 +23,13 @@ namespace Decay
 		/// Bonus that Player's race provides to the skill.
 		/// Together with baselineLevel is used to calculate XP decay rate for the skill.
 		/// Also, used to prevent decaying below (baselineLevel + raceSkillBonus).
-		virtual int GetRaceBonus() noexcept = 0;
+		int GetRaceBonus() noexcept { return raceBonus; }
+
+		/// Updates race bonus for the skill.
+		/// Should be called after Player's race is determined:
+		/// - When a game is loaded
+		/// - After RaceMenu closes, in case Race has changed.
+		virtual void UpdateRaceBonus() noexcept = 0;
 
 		virtual int GetLegendaryLevel() const noexcept = 0;
 
@@ -45,5 +51,8 @@ namespace Decay
 
 			return 0.0f;
 		}
+
+		protected:
+			int raceBonus = 0;
 	};
 }

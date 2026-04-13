@@ -1,4 +1,5 @@
 #pragma once
+#include <map>
 
 namespace SkillDecay
 {
@@ -28,6 +29,14 @@ namespace SkillDecay
 		virtual bool IsDecaying(RE::PlayerCharacter::PlayerSkills::Data::Skill skill) noexcept = 0;
 
 		/// <summary>
+		/// Checks whether the specified custom skill is currently decaying.
+		/// If skillId matches a default skill name (case-insensitive), returns decay status of that skill.
+		/// </summary>
+		/// <param name="skillId">Custom skill identifier or default skill name</param>
+		/// <returns>Flag indicating whether the skill is currently decaying</returns>
+		virtual bool IsDecaying(const char* skillId) noexcept = 0;
+
+		/// <summary>
 		/// Applies decay to a specified skill, reducing its XP and optionally its levels.
 		/// </summary>
 		/// <param name="avSkill">The skill to decay, specified as an ActorValue. The ActorValue must point to a valid skill.</param>
@@ -44,6 +53,15 @@ namespace SkillDecay
 		virtual void DecaySkill(RE::PlayerCharacter::PlayerSkills::Data::Skill skill, float decayXP, bool decayLevels) noexcept = 0;
 
 		/// <summary>
+		/// Applies decay to a specified custom skill, reducing its XP and optionally its levels.
+		/// If skillId matches a default skill name (case-insensitive), decays that skill instead.
+		/// </summary>
+		/// <param name="skillId">Custom skill identifier or default skill name</param>
+		/// <param name="decayXP">The amount of XP to subtract from the skill.</param>
+		/// <param name="decayLevels">If true and decayXP is larger than the skill's current XP, skill level will be reduced and remaining decayXP subtracted.</param>
+		virtual void DecaySkill(const char* skillId, float decayXP, bool decayLevels) noexcept = 0;
+
+		/// <summary>
 		/// Resets decaying state of a specified skill, preventing it from decaying until it is applied again.
 		///
 		/// If the skill is not currently decaying, this function does nothing.
@@ -58,9 +76,82 @@ namespace SkillDecay
 		/// </summary>
 		/// <param name="skill">The skill to reset.</param>
 		virtual void ResetDecay(RE::PlayerCharacter::PlayerSkills::Data::Skill skill) noexcept = 0;
+
+		/// <summary>
+		/// Resets decaying state of a specified custom skill, preventing it from decaying until it is applied again.
+		/// If skillId matches a default skill name (case-insensitive), resets that skill instead.
+		///
+		/// If the skill is not currently decaying, this function does nothing.
+		/// </summary>
+		/// <param name="skillId">Custom skill identifier or default skill name</param>
+		virtual void ResetDecay(const char* skillId) noexcept = 0;
+
+		/// <summary>
+		/// Registers a custom skill for decay tracking using TESGlobal variables.
+		/// 
+		/// IMPORTANT: Registration will be IGNORED if skillId matches any default skill name:
+		/// OneHanded, TwoHanded, Archery, Block, Smithing, HeavyArmor, LightArmor, 
+		/// Pickpocket, Lockpicking, Sneak, Alchemy, Speech, Alteration, Conjuration, 
+		/// Destruction, Illusion, Restoration, Enchanting (case-insensitive)
+		/// 
+		/// LIFETIME REQUIREMENTS:
+		/// - skillId string must remain valid (recommend using string literals)
+		/// - All TESGlobal* pointers must remain valid (they typically do, as they're forms)
+		/// - userData must remain valid if callback is provided
+		/// - callback can be nullptr if notification is not needed
+		/// 
+		/// BEHAVIOR:
+		/// - SkillDecay READs from levelGlobal, xpGlobal, and legendaryGlobal to track usage
+		/// - SkillDecay WRITEs to these globals when decay occurs
+		/// - If xpNormalized is true, xpGlobal is treated as 0-1 progress (fraction of level threshold)
+		/// - If xpNormalized is false, xpGlobal is treated as absolute XP value
+		/// - If provided, callback is invoked AFTER globals are updated
+		/// - Callback is invoked on the main game thread
+		/// 
+		/// THREAD SAFETY:
+		/// - All callbacks are invoked from the main game thread
+		/// - No synchronization is needed in the callback
+		/// </summary>
+		/// <param name="skillId">Unique identifier for the custom skill (will be ignored if matches default skill)</param>
+		/// <param name="improveMult">Skill improvement multiplier</param>
+		/// <param name="improveOffset">Skill improvement offset</param>
+		/// <param name="skillUseCurve">Skill use curve (typically fSkillUseCurve, default 1.95)</param>
+		/// <param name="levelGlobal">TESGlobal storing current skill level. Must not be nullptr.</param>
+		/// <param name="xpGlobal">TESGlobal storing current skill XP. Must not be nullptr.</param>
+		/// <param name="xpNormalized">If true, xpGlobal contains 0-1 progress; if false, absolute XP</param>
+		/// <param name="legendaryGlobal">Optional TESGlobal for legendary level counter. Can be nullptr.</param>
+		/// <param name="raceBonuses">Optional map of race FormIDs to skill bonuses. Can be nullptr.</param>
+		/// <param name="raceBonusesCount">Number of entries in raceBonuses map. Ignored if raceBonuses is nullptr.</param>
+		/// <param name="userData">Optional context pointer passed to callback. Can be nullptr.</param>
+		/// <returns>True if registration succeeded, false if skillId already exists, is a default skill, or globals are nullptr</returns>
+		virtual bool RegisterCustomSkill(
+			const char* skillId,
+			RE::ActorValueInfo* avi,
+			RE::TESGlobal* levelGlobal,
+			RE::TESGlobal* xpGlobal,
+			bool xpNormalized,
+			RE::TESGlobal* legendaryGlobal,
+			const std::pair<RE::FormID, int>* raceBonuses,
+			size_t raceBonusesCount) noexcept = 0;
+
+		/// <summary>
+		/// Unregisters a custom skill, stopping decay tracking.
+		/// Safe to call even if skillId is not registered.
+		/// Does nothing if skillId matches a default skill name.
+		/// </summary>
+		/// <param name="skillId">The skill identifier to unregister</param>
+		virtual void UnregisterCustomSkill(const char* skillId) noexcept = 0;
+
+		/// <summary>
+		/// Checks if a custom skill is currently registered.
+		/// Returns false if skillId matches a default skill name.
+		/// </summary>
+		/// <param name="skillId">The skill identifier to check</param>
+		/// <returns>True if the custom skill is registered (not a default skill)</returns>
+		virtual bool IsCustomSkillRegistered(const char* skillId) noexcept = 0;
 	};
 
-	typedef void* (*_RequestPluginAPI)(const InterfaceVersion interfaceVersion);
+	typedef API* (*_RequestPluginAPI)(const InterfaceVersion interfaceVersion);
 
 	/// <summary>
 	/// Request the SkillDecay API interface.
@@ -68,7 +159,7 @@ namespace SkillDecay
 	/// </summary>
 	/// <param name="a_interfaceVersion">The interface version to request</param>
 	/// <returns>The pointer to the API singleton, or nullptr if request failed</returns>
-	[[nodiscard]] inline void* RequestPluginAPI(const InterfaceVersion a_interfaceVersion = InterfaceVersion::kV1)
+	[[nodiscard]] inline API* RequestPluginAPI(const InterfaceVersion a_interfaceVersion = InterfaceVersion::kV1)
 	{
 		const auto pluginHandle = GetModuleHandleA("SkillDecay.dll");
 		if (_RequestPluginAPI requestAPIFunction = (_RequestPluginAPI)GetProcAddress(pluginHandle, "RequestPluginAPI"); requestAPIFunction) {

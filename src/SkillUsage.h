@@ -108,6 +108,8 @@ namespace Decay
 
 		int GetDecayCapLevel() const;
 
+		void UpdateBaselineLevel();
+
 		const DecayConfig& GetConfig() const { return decay; }
 
 	private:

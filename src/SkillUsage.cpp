@@ -9,14 +9,9 @@ namespace Decay
 {
 	void SkillUsage::Init(BaseSkillData* skill, const DecayConfig& config)
 	{
+		assert(skill);
 		this->skill = skill;
 		this->decay = config;
-
-		for (const auto& boost : Player->GetRace()->data.skillBoosts) {
-			if (decay.baselineLevelOffset < 0 && boost.bonus > decay.baselineLevelOffset) {
-				decay.baselineLevelOffset = boost.bonus;
-			}
-		}
 	}
 
 	void SkillUsage::Init(BaseSkillData* skill, DecayConfig& config)
@@ -263,6 +258,18 @@ namespace Decay
 			return max(GetStartingLevel(), lastKnownHighestLevel + effectiveLevelCap);
 		} else {
 			return GetStartingLevel();
+		}
+	}
+	void SkillUsage::UpdateBaselineLevel()
+	{
+		if (!Player || !Player->GetRace()) {
+			return;
+		}
+
+		for (const auto& boost : Player->GetRace()->data.skillBoosts) {
+			if (decay.baselineLevelOffset < 0 && boost.bonus > decay.baselineLevelOffset) {
+				decay.baselineLevelOffset = boost.bonus;
+			}
 		}
 	}
 }

@@ -184,7 +184,7 @@ namespace Decay
 			std::format("{:.1f}d", config.maxDaysPerLevel));
 	}
 
-	DecayTracker::DecayTracker()
+	void DecayTracker::LoadDefaultSkills()
 	{
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
 			defaultSkills[skill] = new PlayerSkillData(skill);
@@ -298,28 +298,40 @@ namespace Decay
 		logger::info("{:>11} | {:^12} | {:^14} | {:^15} | {:^12} | {:^10} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
 			"Skill", "Grace Period", "Decay Duration", "Baseline Offset", "Extra Offset", "Difficulty", "Difficulty Mult", "Damping", "Legendary Damping", "Decay Cap", "Min Decay Days", "Max Decay Days");
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
-			auto& config = defaultConfigs[skill];
+			auto config = defaultConfigs[skill];
 			defaultConfig.ApplyTo(config);
 			configs[PlayerSkillData::DEFAULT_SKILL_NAMES[skill]].ApplyTo(config);
+			configs.erase(PlayerSkillData::DEFAULT_SKILL_NAMES[skill]);
 			overwriteConfig.ApplyTo(config);
 
 			ValidateConfig(config, defaultConfigs[skill]);
 
+			skillConfigs[skill] = config;
 			skillUsages[skill].Init(defaultSkills[skill], config);
 			LogSkillConfig(SkillName(skill), config);
 		}
 
+		if (!configs.empty()) {
+			logger::info("{:->11} | {:-^12} | {:-^14} | {:-^15} | {:-^12} | {:-^10} | {:-^15} | {:-^7} | {:-^17} | {:-^9} | {:-^14} | {:-^14}",
+				"", "", "", "", "", "", "", "", "", "", "", "");
+		}
+
 		DecayConfig empty{};
-		for (const auto& [skillId, _] : customSkills) {
+		for (const auto& [skillId, customConfig] : configs) {
 			DecayConfig config{};
 			defaultConfig.ApplyTo(config);
-			configs[skillId].ApplyTo(config);
+			customConfig.ApplyTo(config);
 			overwriteConfig.ApplyTo(config);
 
 			ValidateConfig(config, empty);
-
-			customSkillUsages[skillId].Init(customSkills[skillId], config);
+			
+			customSkillConfigs[skillId] = config;
 			LogSkillConfig(skillId, config);
+		}
+
+		
+		for (const auto& [skillId, skillData] : customSkills) {
+			customSkillUsages[skillId].Init(skillData, customSkillConfigs[skillId]);
 		}
 
 		initialized = true;
@@ -365,20 +377,25 @@ namespace Decay
 		}
 
 		auto skill = new CustomSkillData(skillId, avi, levelGlobal, xpGlobal, xpNormalized, legendaryGlobal, raceBonuses);
+		skill->UpdateRaceBonus();
 		customSkills[skillId] = skill;
 
-		auto usage = SkillUsage();
-		usage.Init(skill, DecayConfig());  // TODO: Config needs to be read from file.
-		customSkillUsages[skillId] = usage;
-
+		logger::info("Registered custom skill: {}", skillId);
 		return true;
 	}
 
 	RE::BSEventNotifyControl DecayTracker::ProcessEvent(const RE::MenuOpenCloseEvent* event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*)
 	{
-		// We need to reload settings, specifically, Racial Skill Bonuses after RaceMenu is closed, since player might've changed race.
 		if (event->menuName == RE::RaceSexMenu::MENU_NAME && !event->opening) {
-			LoadSettings();
+			for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
+				defaultSkills[skill]->UpdateRaceBonus();
+				skillUsages[skill].UpdateBaselineLevel();
+			}
+			for (const auto& [skillId, skillData] : customSkills) {
+				skillData->UpdateRaceBonus();
+				customSkillUsages[skillId].UpdateBaselineLevel();
+				customSkillUsages[skillId].Init(skillData, customSkillConfigs[skillId]);
+			}
 		}
 
 		return RE::BSEventNotifyControl::kContinue;

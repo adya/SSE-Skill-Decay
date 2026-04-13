@@ -33,7 +33,7 @@ namespace Decay
 		int                 GetLevel() const noexcept override;
 		float               GetXP() const noexcept override;
 		void                SetXP(float xp) noexcept override;
-		int                 GetRaceBonus() noexcept override;
+		void                UpdateRaceBonus() noexcept override;
 		int                 GetLegendaryLevel() const noexcept override;
 		void                ModLevel(int mod) noexcept override;
 		RE::ActorValueInfo* GetAVInfo() const noexcept override;
