@@ -88,18 +88,18 @@ namespace SkillDecay
 
 		/// <summary>
 		/// Registers a custom skill for decay tracking using TESGlobal variables.
-		/// 
+		///
 		/// IMPORTANT: Registration will be IGNORED if skillId matches any default skill name:
-		/// OneHanded, TwoHanded, Archery, Block, Smithing, HeavyArmor, LightArmor, 
-		/// Pickpocket, Lockpicking, Sneak, Alchemy, Speech, Alteration, Conjuration, 
+		/// OneHanded, TwoHanded, Archery, Block, Smithing, HeavyArmor, LightArmor,
+		/// Pickpocket, Lockpicking, Sneak, Alchemy, Speech, Alteration, Conjuration,
 		/// Destruction, Illusion, Restoration, Enchanting (case-insensitive)
-		/// 
+		///
 		/// LIFETIME REQUIREMENTS:
 		/// - skillId string must remain valid (recommend using string literals)
 		/// - All TESGlobal* pointers must remain valid (they typically do, as they're forms)
 		/// - userData must remain valid if callback is provided
 		/// - callback can be nullptr if notification is not needed
-		/// 
+		///
 		/// BEHAVIOR:
 		/// - SkillDecay READs from levelGlobal, xpGlobal, and legendaryGlobal to track usage
 		/// - SkillDecay WRITEs to these globals when decay occurs
@@ -107,7 +107,7 @@ namespace SkillDecay
 		/// - If xpNormalized is false, xpGlobal is treated as absolute XP value
 		/// - If provided, callback is invoked AFTER globals are updated
 		/// - Callback is invoked on the main game thread
-		/// 
+		///
 		/// THREAD SAFETY:
 		/// - All callbacks are invoked from the main game thread
 		/// - No synchronization is needed in the callback
@@ -125,14 +125,14 @@ namespace SkillDecay
 		/// <param name="userData">Optional context pointer passed to callback. Can be nullptr.</param>
 		/// <returns>True if registration succeeded, false if skillId already exists, is a default skill, or globals are nullptr</returns>
 		virtual bool RegisterCustomSkill(
-			const char* skillId,
-			RE::ActorValueInfo* avi,
-			RE::TESGlobal* levelGlobal,
-			RE::TESGlobal* xpGlobal,
-			bool xpNormalized,
-			RE::TESGlobal* legendaryGlobal,
+			const char*                       skillId,
+			RE::ActorValueInfo*               avi,
+			RE::TESGlobal*                    levelGlobal,
+			RE::TESGlobal*                    xpGlobal,
+			bool                              xpNormalized,
+			RE::TESGlobal*                    legendaryGlobal,
 			const std::pair<RE::FormID, int>* raceBonuses,
-			size_t raceBonusesCount) noexcept = 0;
+			size_t                            raceBonusesCount) noexcept = 0;
 
 		/// <summary>
 		/// Unregisters a custom skill, stopping decay tracking.

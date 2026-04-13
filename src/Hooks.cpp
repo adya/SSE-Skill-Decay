@@ -71,7 +71,7 @@ namespace Decay
 			}
 		}
 	}
-	
+
 	struct StatsMenu_ProcessMessage
 	{
 		using Target = RE::StatsMenu;

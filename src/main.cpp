@@ -6,7 +6,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 {
 	switch (a_message->type) {
 	case SKSE::MessagingInterface::kPostLoad:
-		
+
 		SKSE::GetMessagingInterface()->Dispatch(
 			Decay::MESSAGE_TYPE::kSkillDecayInterface,
 			Decay::DecayInterface::GetSingleton(),

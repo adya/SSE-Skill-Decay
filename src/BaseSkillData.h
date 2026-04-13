@@ -52,7 +52,7 @@ namespace Decay
 			return 0.0f;
 		}
 
-		protected:
-			int raceBonus = 0;
+	protected:
+		int raceBonus = 0;
 	};
 }

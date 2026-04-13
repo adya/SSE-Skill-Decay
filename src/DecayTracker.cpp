@@ -324,12 +324,11 @@ namespace Decay
 			overwriteConfig.ApplyTo(config);
 
 			ValidateConfig(config, empty);
-			
+
 			customSkillConfigs[skillId] = config;
 			LogSkillConfig(skillId, config);
 		}
 
-		
 		for (const auto& [skillId, skillData] : customSkills) {
 			customSkillUsages[skillId].Init(skillData, customSkillConfigs[skillId]);
 		}
