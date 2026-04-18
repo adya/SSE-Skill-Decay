@@ -89,41 +89,27 @@ namespace SkillDecay
 		/// <summary>
 		/// Registers a custom skill for decay tracking using TESGlobal variables.
 		///
-		/// IMPORTANT: Registration will be IGNORED if skillId matches any default skill name:
+		/// IMPORTANT: Registration will FAIL if skillId matches any default skill name:
 		/// OneHanded, TwoHanded, Archery, Block, Smithing, HeavyArmor, LightArmor,
 		/// Pickpocket, Lockpicking, Sneak, Alchemy, Speech, Alteration, Conjuration,
-		/// Destruction, Illusion, Restoration, Enchanting (case-insensitive)
-		///
-		/// LIFETIME REQUIREMENTS:
-		/// - skillId string must remain valid (recommend using string literals)
-		/// - All TESGlobal* pointers must remain valid (they typically do, as they're forms)
-		/// - userData must remain valid if callback is provided
-		/// - callback can be nullptr if notification is not needed
+		/// Destruction, Illusion, Restoration, Enchanting.
+		/// 
+		/// WerewolfPerks and VampirePerks are also reserved and cannot be used as skillIds.
 		///
 		/// BEHAVIOR:
 		/// - SkillDecay READs from levelGlobal, xpGlobal, and legendaryGlobal to track usage
-		/// - SkillDecay WRITEs to these globals when decay occurs
-		/// - If xpNormalized is true, xpGlobal is treated as 0-1 progress (fraction of level threshold)
-		/// - If xpNormalized is false, xpGlobal is treated as absolute XP value
-		/// - If provided, callback is invoked AFTER globals are updated
-		/// - Callback is invoked on the main game thread
-		///
-		/// THREAD SAFETY:
-		/// - All callbacks are invoked from the main game thread
-		/// - No synchronization is needed in the callback
+		/// - SkillDecay WRITEs to levelGlobal and xpGlobal when decay occurs
+		/// - Skill improvement curve is derived from avi->skill->improveMult and avi->skill->improveOffset using default game formula.
 		/// </summary>
-		/// <param name="skillId">Unique identifier for the custom skill (will be ignored if matches default skill)</param>
-		/// <param name="improveMult">Skill improvement multiplier</param>
-		/// <param name="improveOffset">Skill improvement offset</param>
-		/// <param name="skillUseCurve">Skill use curve (typically fSkillUseCurve, default 1.95)</param>
+		/// <param name="skillId">Unique identifier for the custom skill. Must not be null or empty. Must not match a default skill name.</param>
+		/// <param name="avi">ActorValueInfo for the custom skill. Must not be nullptr and must have valid skill info (avi->skill != nullptr).</param>
 		/// <param name="levelGlobal">TESGlobal storing current skill level. Must not be nullptr.</param>
 		/// <param name="xpGlobal">TESGlobal storing current skill XP. Must not be nullptr.</param>
-		/// <param name="xpNormalized">If true, xpGlobal contains 0-1 progress; if false, absolute XP</param>
+		/// <param name="xpNormalized">If true, xpGlobal contains 0-1 progress; if false, absolute XP.</param>
 		/// <param name="legendaryGlobal">Optional TESGlobal for legendary level counter. Can be nullptr.</param>
-		/// <param name="raceBonuses">Optional map of race FormIDs to skill bonuses. Can be nullptr.</param>
-		/// <param name="raceBonusesCount">Number of entries in raceBonuses map. Ignored if raceBonuses is nullptr.</param>
-		/// <param name="userData">Optional context pointer passed to callback. Can be nullptr.</param>
-		/// <returns>True if registration succeeded, false if skillId already exists, is a default skill, or globals are nullptr</returns>
+		/// <param name="raceBonuses">Optional array of race FormID to skill bonus pairs. Can be nullptr.</param>
+		/// <param name="raceBonusesCount">Number of entries in raceBonuses array. Ignored if raceBonuses is nullptr.</param>
+		/// <returns>True if registration succeeded, otherwise false</returns>
 		virtual bool RegisterCustomSkill(
 			const char*                       skillId,
 			RE::ActorValueInfo*               avi,
