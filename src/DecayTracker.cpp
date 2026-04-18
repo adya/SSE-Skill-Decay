@@ -169,7 +169,7 @@ namespace Decay
 	{
 		constexpr std::string_view difficultyNames[] = { "Novice", "Apprentice", "Adept", "Expert", "Master", "Legendary" };
 
-		logger::info("{:>11} | {:^12} | {:^14} | {:^15} | {:^12} | {:^10} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
+		logger::info("{:>16} | {:^12} | {:^14} | {:^15} | {:^12} | {:^10} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
 			skillName,
 			std::signbit(config.gracePeriod) ? "Auto" : std::format("{:.1f}h", config.gracePeriod),
 			std::format("{:.1f}h", config.interval),
@@ -295,7 +295,7 @@ namespace Decay
 		auto formattedRate = trackingRate < 1.0f ? std::format("{:.2f} in-game minutes", trackingRate * 60.0f) : std::format("{:.2f} in-game hours", trackingRate);
 		logger::info("Tracking Rate: once every {}", formattedRate);
 
-		logger::info("{:>11} | {:^12} | {:^14} | {:^15} | {:^12} | {:^10} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
+		logger::info("{:>16} | {:^12} | {:^14} | {:^15} | {:^12} | {:^10} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
 			"Skill", "Grace Period", "Decay Duration", "Baseline Offset", "Extra Offset", "Difficulty", "Difficulty Mult", "Damping", "Legendary Damping", "Decay Cap", "Min Decay Days", "Max Decay Days");
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
 			auto config = defaultConfigs[skill];
@@ -312,7 +312,7 @@ namespace Decay
 		}
 
 		if (!configs.empty()) {
-			logger::info("{:->11} | {:-^12} | {:-^14} | {:-^15} | {:-^12} | {:-^10} | {:-^15} | {:-^7} | {:-^17} | {:-^9} | {:-^14} | {:-^14}",
+			logger::info("{:->16} | {:-^12} | {:-^14} | {:-^15} | {:-^12} | {:-^10} | {:-^15} | {:-^7} | {:-^17} | {:-^9} | {:-^14} | {:-^14}",
 				"", "", "", "", "", "", "", "", "", "", "", "");
 		}
 
@@ -368,19 +368,13 @@ namespace Decay
 		}
 	}
 
-	bool DecayTracker::RegisterCustomSkill(const std::string& skillId, RE::ActorValueInfo* avi, RE::TESGlobal* levelGlobal, RE::TESGlobal* xpGlobal, bool xpNormalized, RE::TESGlobal* legendaryGlobal, std::map<RE::FormID, int>& raceBonuses) noexcept
+	void DecayTracker::RegisterCustomSkill(const std::string& skillId, RE::ActorValueInfo* avi, RE::TESGlobal* levelGlobal, RE::TESGlobal* xpGlobal, bool xpNormalized, RE::TESGlobal* legendaryGlobal, std::map<RE::FormID, int>& raceBonuses) noexcept
 	{
-		if (PlayerSkillData::IsDefaultSkill(skillId)) {
-			logger::error("Cannot register custom skill with ID {} because it conflicts with default skill names.", skillId);
-			return false;
-		}
+		assert(!PlayerSkillData::IsDefaultSkill(skillId));
 
 		auto skill = new CustomSkillData(skillId, avi, levelGlobal, xpGlobal, xpNormalized, legendaryGlobal, raceBonuses);
 		skill->UpdateRaceBonus();
 		customSkills[skillId] = skill;
-
-		logger::info("Registered custom skill: {}", skillId);
-		return true;
 	}
 
 	RE::BSEventNotifyControl DecayTracker::ProcessEvent(const RE::MenuOpenCloseEvent* event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*)
@@ -406,12 +400,11 @@ namespace Decay
 
 		if (logSkillUsage) {
 			logger::info("{:*^65}", " Skill Data ");
-			logger::info("[{:^13}] {} | {:^11} | {:^11} | {:^9} | {:^8}", timestamp, "D", "Skill", "Level [Cap]", "Threshold", "XP");
+			logger::info("[{:^13}] {} | {:^16} | {:^11} | {:^9} | {:^8}", timestamp, "D", "Skill", "Level [Cap]", "Threshold", "XP");
 		}
 
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
 			auto&       usage = skillUsages[skill];
-			const auto& skillData = Player->skills->data->skills[skill];
 
 			std::string decayStatus = "-";
 
@@ -426,10 +419,34 @@ namespace Decay
 				decayStatus = "-";
 			}
 			if (logSkillUsage) {
-				std::string levelInfo = std::format("{:^3.0f}[{:^2}]", Player->GetBaseActorValue(AV(skill)), usage.GetDecayCapLevel());
-				logger::info("[{:^13}] {} | {:^11} | {:^11} | {:^9.2f} | {:^8.2f}", timestamp, decayStatus, SkillName(skill), levelInfo, skillData.levelThreshold, skillData.xp);
+				std::string levelInfo = std::format("{:^3}[{:^2}]", usage.GetSkill()->GetLevel(), usage.GetDecayCapLevel());
+				logger::info("[{:^13}] {} | {:^16} | {:^11} | {:^9.2f} | {:^8.2f}", timestamp, decayStatus, SkillName(skill), levelInfo, usage.GetSkill()->GetLevelThreshold(), usage.GetSkill()->GetXP());
 			}
 		}
+
+		if (!customSkillUsages.empty() && logSkillUsage) {
+			logger::info("[{:^13}] - | {:-^16} | {:-^11} | {:-^9} | {:-^8}",
+				timestamp, "", "", "", "");
+		}
+
+		for (auto& [skillId, usage] : customSkillUsages) {
+			std::string decayStatus = "-";
+			if (!usage.IsInitialized() || usage.WasUsed()) {
+				usage.SetUsed(calendar);
+				decayStatus = "↑";
+			} else if (usage.IsDecaying()) {
+				usage.Decay(calendar);
+				decayStatus = "↓";
+			} else if (usage.IsStale(calendar)) {
+				usage.MarkDecaying(calendar);
+				decayStatus = "-";
+			}
+			 if (logSkillUsage) {
+				std::string levelInfo = std::format("{:^3}[{:^2}]", usage.GetSkill()->GetLevel(), usage.GetDecayCapLevel());
+				 logger::info("[{:^13}] {} | {:^16} | {:^11} | {:^9.2f} | {:^8.2f}", timestamp, decayStatus, skillId, levelInfo, usage.GetSkill()->GetLevelThreshold(), usage.GetSkill()->GetXP());
+			}
+		}
+
 		if (logSkillUsage) {
 			logger::info("");
 		}

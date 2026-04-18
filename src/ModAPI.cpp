@@ -1,5 +1,6 @@
 #include "ModAPI.h"
 #include "DecayTracker.h"
+#include "CustomSkillData.h"
 
 namespace Decay
 {
@@ -59,8 +60,23 @@ namespace Decay
 		const std::pair<RE::FormID, int>* raceBonuses,
 		size_t                            raceBonusesCount) noexcept
 	{
-		if (!skillId || !levelGlobal || !xpGlobal || !avi || !legendaryGlobal)
+		if (!skillId || skillId[0] == '\0') {
 			return false;
+		}
+
+		if (!levelGlobal || !xpGlobal) {
+			logger::error("Failed to register custom skill '{}': Level and XP globals are required.", skillId);
+			return false;
+		}
+		if (!avi || !avi->skill) {
+			logger::error("Failed to register custom skill '{}': ActorValueInfo with valid skill info is required.", skillId);
+			return false;
+		}
+
+		if (PlayerSkillData::IsDefaultSkill(skillId)) {
+			logger::error("Cannot register custom skill '{}' because it conflicts with default skill names.", skillId);
+			return false;
+		}
 
 		auto& tracker = DecayTracker::GetInstance();
 
@@ -71,10 +87,17 @@ namespace Decay
 				raceBonusesMap[raceBonuses[i].first] = raceBonuses[i].second;
 			}
 		}
-
-		return tracker.RegisterCustomSkill(
+		
+		tracker.RegisterCustomSkill(
 			skillId, avi,
 			levelGlobal, xpGlobal, xpNormalized, legendaryGlobal,
 			raceBonusesMap);
+
+		logger::info("Registered custom skill '{}':", skillId);
+		logger::info("\tUses {} XP values;", xpNormalized ? "normalized" : "absolute");
+		logger::info("\tImproveMult: {:.3f}; ImproveOffset: {:.3f}", avi->skill->improveMult, avi->skill->improveOffset);
+		logger::info("\t{} legendary level bonuses;", legendaryGlobal ? "Supports" : "Doesn't support");
+		logger::info("\t{} race bonuses;", raceBonusesCount > 0 ? "Supports" : "Doesn't support");
+		return true;
 	}
 }

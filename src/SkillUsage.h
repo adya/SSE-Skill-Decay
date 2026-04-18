@@ -108,6 +108,8 @@ namespace Decay
 
 		int GetDecayCapLevel() const;
 
+		const BaseSkillData* const GetSkill() const { return skill; }
+
 		void UpdateBaselineLevel();
 
 		const DecayConfig& GetConfig() const { return decay; }

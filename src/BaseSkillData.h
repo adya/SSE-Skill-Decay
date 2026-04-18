@@ -11,6 +11,9 @@ namespace Decay
 		/// Gets level of the associated Skill.
 		virtual int GetLevel() const noexcept = 0;
 
+		/// Gets XP required to reach the next level for the associated Skill.
+		virtual float GetLevelThreshold() const noexcept = 0;
+
 		/// Gets XP of the associated Skill.
 		virtual float GetXP() const noexcept = 0;
 

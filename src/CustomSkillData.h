@@ -28,6 +28,7 @@ namespace Decay
 
 		std::string_view    GetName() const noexcept override;
 		int                 GetLevel() const noexcept override;
+		float               GetLevelThreshold() const noexcept override;
 		float               GetXP() const noexcept override;
 		void                SetXP(float xp) noexcept override;
 		void                UpdateRaceBonus() noexcept override;

@@ -14,7 +14,12 @@ namespace Decay
 
 	int PlayerSkillData::GetLevel() const noexcept
 	{
-		return Player->GetActorValue(AV(skill));
+		return Player->GetBaseActorValue(AV(skill));
+	}
+
+	float PlayerSkillData::GetLevelThreshold() const noexcept
+	{
+		return Player->skills->data->skills[skill].levelThreshold;
 	}
 
 	float PlayerSkillData::GetXP() const noexcept
@@ -49,7 +54,7 @@ namespace Decay
 	void PlayerSkillData::ModLevel(int mod) noexcept
 	{
 		auto& skillData = Player->skills->data->skills[skill];
-		auto  level = Player->GetBaseActorValue(AV(skill));
+		auto  level = GetLevel();
 
 		Player->ModBaseActorValue(AV(skill), mod);
 		// skillData.level is only updated after player confirms level up (in Skills Menu).

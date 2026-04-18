@@ -10,7 +10,8 @@ namespace Decay
 			"OneHanded", "TwoHanded", "Archery", "Block", "Smithing",
 			"HeavyArmor", "LightArmor", "Pickpocket", "Lockpicking",
 			"Sneak", "Alchemy", "Speech", "Alteration", "Conjuration",
-			"Destruction", "Illusion", "Restoration", "Enchanting"
+			"Destruction", "Illusion", "Restoration", "Enchanting",
+			"VampirePerks", "WerewolfPerks" // Even though Vampire and Werewolf skills are not decayable, we still consider them default skills.
 		};
 
 		constexpr static bool IsDefaultSkill(std::string_view skillId) noexcept
@@ -31,6 +32,7 @@ namespace Decay
 
 		std::string_view    GetName() const noexcept override;
 		int                 GetLevel() const noexcept override;
+		float               GetLevelThreshold() const noexcept override;
 		float               GetXP() const noexcept override;
 		void                SetXP(float xp) noexcept override;
 		void                UpdateRaceBonus() noexcept override;

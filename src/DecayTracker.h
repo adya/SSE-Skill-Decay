@@ -24,7 +24,7 @@ namespace Decay
 
 		void ApplyTint(RE::GFxMovieView*) const;
 
-		bool RegisterCustomSkill(
+		void RegisterCustomSkill(
 			const std::string&         skillId,
 			RE::ActorValueInfo*        avi,
 			RE::TESGlobal*             levelGlobal,

@@ -12,6 +12,11 @@ namespace Decay
 		return levelGlobal ? static_cast<int>(levelGlobal->value) : 0;
 	}
 
+	float CustomSkillData::GetLevelThreshold() const noexcept
+	{
+		return CalculateLevelThresholdXP(GetLevel());
+	}
+
 	float CustomSkillData::GetXP() const noexcept
 	{
 		if (!xpGlobal)
@@ -19,7 +24,7 @@ namespace Decay
 
 		float xp = xpGlobal->value;
 		if (xpNormalized) {
-			float threshold = CalculateLevelThresholdXP(GetLevel());
+			float threshold = GetLevelThreshold();
 			return xp * threshold;
 		}
 		return xp;
@@ -33,7 +38,7 @@ namespace Decay
 		xp = max(0.0f, xp);
 
 		if (xpNormalized) {
-			if (float threshold = CalculateLevelThresholdXP(GetLevel()); threshold > 0) {
+			if (float threshold = GetLevelThreshold(); threshold > 0) {
 				xpGlobal->value = xp / threshold;
 			}
 		} else {
