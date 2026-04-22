@@ -1,9 +1,22 @@
 #include "ModAPI.h"
 #include "DecayTracker.h"
-#include "CustomSkillData.h"
 
 namespace Decay
 {
+	namespace
+	{
+		std::optional<Skill> ToSkillFromName(const char* skillId) noexcept
+		{
+			const std::string lower = skillId;
+			for (int i = 0; i < Skill::kTotal; ++i) {
+				if (lower == std::string(PlayerSkillData::DEFAULT_SKILL_NAMES[i])) {
+					return static_cast<Skill>(i);
+				}
+			}
+			return std::nullopt;
+		}
+	}
+
 	std::optional<Skill> ToSkill(RE::ActorValue avSkill) noexcept
 	{
 		if (avSkill < RE::ActorValue::kOneHanded || avSkill > RE::ActorValue::kEnchanting) {
@@ -26,16 +39,39 @@ namespace Decay
 		return DecayTracker::GetInstance()[skill].IsDecaying();
 	}
 
+	bool DecayInterface::IsDecaying(const char* skillId) noexcept
+	{
+		if (!skillId)
+			return false;
+		if (const auto skill = ToSkillFromName(skillId))
+			return IsDecaying(*skill);
+		if (const auto* usage = DecayTracker::GetInstance().GetCustomSkillUsage(skillId))
+			return usage->IsDecaying();
+		return false;
+	}
+
 	void DecayInterface::DecaySkill(RE::ActorValue avSkill, float decayXP, bool decayLevels) noexcept
 	{
 		if (const auto skill = ToSkill(avSkill)) {
-			DecayTracker::GetInstance()[*skill].DecaySkill(Player->skills->data->skills[*skill], decayXP, decayLevels);
+			DecayTracker::GetInstance()[*skill].DecaySkill(decayXP, decayLevels);
 		}
 	}
 
 	void DecayInterface::DecaySkill(Skill skill, float decayXP, bool decayLevels) noexcept
 	{
-		DecayTracker::GetInstance()[skill].DecaySkill(Player->skills->data->skills[skill], decayXP, decayLevels);
+		DecayTracker::GetInstance()[skill].DecaySkill(decayXP, decayLevels);
+	}
+
+	void DecayInterface::DecaySkill(const char* skillId, float decayXP, bool decayLevels) noexcept
+	{
+		if (!skillId)
+			return;
+		if (const auto skill = ToSkillFromName(skillId)) {
+			DecaySkill(*skill, decayXP, decayLevels);
+			return;
+		}
+		if (auto* usage = DecayTracker::GetInstance().GetCustomSkillUsage(skillId))
+			usage->DecaySkill(decayXP, decayLevels);
 	}
 
 	void DecayInterface::ResetDecay(RE::ActorValue avSkill) noexcept
@@ -50,8 +86,21 @@ namespace Decay
 		DecayTracker::GetInstance()[skill].ResetDecay();
 	}
 
+	void DecayInterface::ResetDecay(const char* skillId) noexcept
+	{
+		if (!skillId)
+			return;
+		if (const auto skill = ToSkillFromName(skillId)) {
+			ResetDecay(*skill);
+			return;
+		}
+		if (auto* usage = DecayTracker::GetInstance().GetCustomSkillUsage(skillId))
+			usage->ResetDecay();
+	}
+
 	bool DecayInterface::RegisterCustomSkill(
 		const char*                       skillId,
+		RE::ActorValue                    av,
 		RE::ActorValueInfo*               avi,
 		RE::TESGlobal*                    levelGlobal,
 		RE::TESGlobal*                    xpGlobal,
@@ -89,7 +138,7 @@ namespace Decay
 		}
 		
 		tracker.RegisterCustomSkill(
-			skillId, avi,
+			skillId, av, avi,
 			levelGlobal, xpGlobal, xpNormalized, legendaryGlobal,
 			raceBonusesMap);
 
@@ -99,5 +148,23 @@ namespace Decay
 		logger::info("\t{} legendary level bonuses;", legendaryGlobal ? "Supports" : "Doesn't support");
 		logger::info("\t{} race bonuses;", raceBonusesCount > 0 ? "Supports" : "Doesn't support");
 		return true;
+	}
+
+	void DecayInterface::UnregisterCustomSkill(const char* skillId) noexcept
+	{
+		if (!skillId || skillId[0] == '\0')
+			return;
+		if (PlayerSkillData::IsDefaultSkill(skillId))
+			return;
+		DecayTracker::GetInstance().UnregisterCustomSkill(skillId);
+	}
+
+	bool DecayInterface::IsCustomSkillRegistered(const char* skillId) noexcept
+	{
+		if (!skillId || skillId[0] == '\0')
+			return false;
+		if (PlayerSkillData::IsDefaultSkill(skillId))
+			return false;
+		return DecayTracker::GetInstance().IsCustomSkillRegistered(skillId);
 	}
 }

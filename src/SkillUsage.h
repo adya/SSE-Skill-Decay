@@ -65,8 +65,6 @@ namespace Decay
 		float maxDaysPerLevel = 14.0f;
 
 		/// Paths to the skill level meter UI elements for each skill, used for applying color tint when decaying.
-		std::vector<std::string> uiLayers;
-
 		/// Color of the tint to be applied to the skill level meter UI elements when the skill is decaying.
 		RE::GColor decayTint = { 255, 60, 0, 200 };
 
@@ -75,12 +73,8 @@ namespace Decay
 		RE::GColor normalTint = { 0, 0, 0, 0 };
 
 		DecayConfig() = default;
-		DecayConfig(std::vector<std::string> layers) :
-			uiLayers(std::move(layers))
-		{}
-		DecayConfig(float damping, std::vector<std::string> layers) :
-			damping(damping),
-			uiLayers(std::move(layers))
+		DecayConfig(float damping) :
+			damping(damping)
 		{}
 	};
 

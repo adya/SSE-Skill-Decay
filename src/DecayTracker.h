@@ -22,16 +22,23 @@ namespace Decay
 		void LoadSettings();
 		void LoadDefaultSkills();
 
-		void ApplyTint(RE::GFxMovieView*) const;
+		void ApplyTint(RE::GFxMovieView*, const std::vector<RE::ActorValue>& skillGroup) const;
 
 		void RegisterCustomSkill(
 			const std::string&         skillId,
+			RE::ActorValue             av,
 			RE::ActorValueInfo*        avi,
 			RE::TESGlobal*             levelGlobal,
 			RE::TESGlobal*             xpGlobal,
 			bool                       xpNormalized,
 			RE::TESGlobal*             legendaryGlobal,
 			std::map<RE::FormID, int>& raceBonuses) noexcept;
+
+		void        UnregisterCustomSkill(const std::string& skillId) noexcept;
+		bool        IsCustomSkillRegistered(const std::string& skillId) const noexcept;
+		SkillUsage* GetCustomSkillUsage(const std::string& skillId) noexcept;
+
+		bool LogStatsMenuTree() const noexcept { return logStatsMenuTree; }
 
 	protected:
 		RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override;
@@ -40,6 +47,7 @@ namespace Decay
 		/// Hours between SkillUsage updates.
 		float trackingRate = 0.016f;  // once every in-game minute by default
 		bool  logSkillUsage = false;
+		bool  logStatsMenuTree = false;
 		float lastDaysPassed = 0;
 		bool  initialized = false;
 

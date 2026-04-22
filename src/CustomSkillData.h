@@ -6,8 +6,9 @@ namespace Decay
 {
 	struct CustomSkillData : BaseSkillData
 	{
-		std::string         skillId;
-		RE::ActorValueInfo* avi;
+		std::string              skillId;
+		RE::ActorValue           av;
+		RE::ActorValueInfo*      avi;
 
 		RE::TESGlobal* levelGlobal;
 		RE::TESGlobal* xpGlobal;
@@ -17,8 +18,9 @@ namespace Decay
 		std::map<RE::FormID, int> raceBonuses;
 
 		CustomSkillData() = delete;
-		CustomSkillData(std::string skillId, RE::ActorValueInfo* avi, RE::TESGlobal* level, RE::TESGlobal* xp, bool xpNormalized, RE::TESGlobal* legendary, std::map<RE::FormID, int>& raceBonuses) :
+		CustomSkillData(std::string skillId, RE::ActorValue av, RE::ActorValueInfo* avi, RE::TESGlobal* level, RE::TESGlobal* xp, bool xpNormalized, RE::TESGlobal* legendary, std::map<RE::FormID, int>& raceBonuses) :
 			skillId(std::move(skillId)),
+			av(av),
 			avi(avi),
 			levelGlobal(level),
 			xpGlobal(xp),

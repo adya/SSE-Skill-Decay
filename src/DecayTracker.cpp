@@ -36,7 +36,6 @@ namespace Decay
 		std::optional<int>                      levelCap;
 		std::optional<float>                    minDaysPerLevel;
 		std::optional<float>                    maxDaysPerLevel;
-		std::optional<std::vector<std::string>> uiLayers;
 		std::optional<RE::GColor>               decayTint;
 		std::optional<RE::GColor>               normalTint;
 
@@ -81,9 +80,6 @@ namespace Decay
 			if (normalTint.has_value()) {
 				config.normalTint = normalTint.value();
 			}
-			if (uiLayers.has_value()) {
-				config.uiLayers = uiLayers.value();
-			}
 		}
 	};
 
@@ -126,16 +122,6 @@ namespace Decay
 		if (!color.empty()) {
 			config.normalTint = clib_util::string::to_color(color);
 		}
-
-		std::string rawLayers = ini.GetValue(section, "sUILayers", "");
-		auto        layers = clib_util::string::split(rawLayers, ",");
-		for (auto& layer : layers) {
-			clib_util::string::trim(layer);
-		}
-
-		if (!layers.empty()) {
-			config.uiLayers = std::move(layers);
-		}
 	}
 
 	void ValidateConfig(DecayConfig& config, const DecayConfig& defaults)
@@ -167,7 +153,7 @@ namespace Decay
 
 	void LogSkillConfig(std::string skillName, const DecayConfig& config)
 	{
-		constexpr std::string_view difficultyNames[] = { "Novice", "Apprentice", "Adept", "Expert", "Master", "Legendary" };
+		static constexpr std::string_view difficultyNames[] = { "Novice", "Apprentice", "Adept", "Expert", "Master", "Legendary" };
 
 		logger::info("{:>16} | {:^12} | {:^14} | {:^15} | {:^12} | {:^10} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
 			skillName,
@@ -233,6 +219,7 @@ namespace Decay
 				float defaultTrackingRate = trackingRate;
 				trackingRate = ini.GetDoubleValue("", "fTrackingRate", trackingRate);
 				logSkillUsage = ini.GetBoolValue("", "bLogSkillUsage", logSkillUsage);
+				logStatsMenuTree = ini.GetBoolValue("", "bLogStatsMenuTree", logStatsMenuTree);
 				if (trackingRate <= 0) {
 					trackingRate = defaultTrackingRate;
 				}
@@ -247,48 +234,25 @@ namespace Decay
 			}
 		}
 
-		// TODO: We can't have built-in defaults for ui layers as it will depend on whether or not there is a CustomSkillsFramework.
-		// So these configs will be provided in INI files.
-		//
-		// These are valid indices for instances present in each SkillText's ShortBar in Vanilla skills
-		// SkillText0: 94-97 // Enchanting
-		// SkillText1: 100-103 // Smithing
-		// SkillText2: 106-109 // Heavy Armor
-		// SkillText3: 112-115 // Block
-		// SkillText4: 118-121 // Two-Handed
-		// SkillText5: 124-127 // One-Handed
-		// SkillText6: 130-133 // Archery
-		// SkillText7: 136-139 // Light Armor
-		// SkillText8: 142-145 // Sneaking
-		// SkillText9: 148-151 // Lockpicking
-		// SkillText10: 154-157 // Pickpocket
-		// SkillText11: 160-163 // Speech
-		// SkillText12: 166-169 // Alchemy
-		// SkillText13: 172-175 // Illusion
-		// SkillText14: 178-181 // Conjuration
-		// SkillText15: 184-187 // Destruction
-		// SkillText16: 190-193 // Restoration
-		// SkillText17: 196-199 // Alteration
-
 		DecayConfig defaultConfigs[Skill::kTotal] = {
-			/* One-Handed */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText5.ShortBar.instance124", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText5.ShortBar.instance126" }),
-			/* Two-Handed */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText4.ShortBar.instance118", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText4.ShortBar.instance120" }),
-			/* Archery */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText6.ShortBar.instance130", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText6.ShortBar.instance132" }),
-			/* Block */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText3.ShortBar.instance112", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText3.ShortBar.instance114" }),
-			/* Smithing */ DecayConfig(2, { "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText1.ShortBar.instance100", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText1.ShortBar.instance102" }),
-			/* Heavy Armor */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText2.ShortBar.instance106", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText2.ShortBar.instance108" }),
-			/* Light Armor */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText7.ShortBar.instance136", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText7.ShortBar.instance138" }),
-			/* Pickpocket */ DecayConfig(2, { "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText10.ShortBar.instance154", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText10.ShortBar.instance156" }),
-			/* Lockpicking */ DecayConfig(2, { "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText9.ShortBar.instance148", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText9.ShortBar.instance150" }),
-			/* Sneaking */ DecayConfig(1.5f, { "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText8.ShortBar.instance142", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText8.ShortBar.instance144" }),
-			/* Alchemy */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText12.ShortBar.instance166", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText12.ShortBar.instance168" }),
-			/* Speech */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText11.ShortBar.instance160", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText11.ShortBar.instance162" }),
-			/* Alteration */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText17.ShortBar.instance196", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText17.ShortBar.instance198" }),
-			/* Conjuration */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText14.ShortBar.instance178", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText14.ShortBar.instance180" }),
-			/* Destruction */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText15.ShortBar.instance184", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText15.ShortBar.instance186" }),
-			/* Illusion */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText13.ShortBar.instance172", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText13.ShortBar.instance174" }),
-			/* Restoration */ DecayConfig({ "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText16.ShortBar.instance190", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText16.ShortBar.instance192" }),
-			/* Enchanting */ DecayConfig(1.25f, { "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText0.ShortBar.instance94", "_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText0.ShortBar.instance96" })
+			/* One-Handed */ DecayConfig(),
+			/* Two-Handed */ DecayConfig(),
+			/* Archery */ DecayConfig(),
+			/* Block */ DecayConfig(),
+			/* Smithing */ DecayConfig(2),
+			/* Heavy Armor */ DecayConfig(),
+			/* Light Armor */ DecayConfig(),
+			/* Pickpocket */ DecayConfig(2),
+			/* Lockpicking */ DecayConfig(2),
+			/* Sneaking */ DecayConfig(1.5f),
+			/* Alchemy */ DecayConfig(),
+			/* Speech */ DecayConfig(),
+			/* Alteration */ DecayConfig(),
+			/* Conjuration */ DecayConfig(),
+			/* Destruction */ DecayConfig(),
+			/* Illusion */ DecayConfig(),
+			/* Restoration */ DecayConfig(),
+			/* Enchanting */ DecayConfig(1.25f)
 		};
 
 		logger::info("{}", logSkillUsage ? "Logging Skill Usage enabled" : "Logging Skill Usage disabled");
@@ -336,45 +300,81 @@ namespace Decay
 		initialized = true;
 	}
 
-	void DecayTracker::ApplyTint(RE::GFxMovieView* movie) const
+	void DecayTracker::ApplyTint(RE::GFxMovieView* movie, const std::vector<RE::ActorValue>& skillGroup) const
 	{
+		if (skillGroup.empty())
+			return;
+
+		// Build AV -> SkillUsage lookup covering both default and custom skills.
+		std::map<RE::ActorValue, const SkillUsage*> avToUsage;
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
-			const auto& usage = skillUsages[skill];
+			avToUsage[AV(skill)] = &skillUsages[skill];
+		}
+		for (const auto& [skillId, skillData] : customSkills) {
+			auto usageIt = customSkillUsages.find(skillId);
+			if (usageIt != customSkillUsages.end()) {
+				avToUsage[skillData->av] = &usageIt->second;
+			}
+		}
+
+		// The Nth entry in skillGroup corresponds to SkillTextN in the GFx tree.
+		// For index N: path1 = SkillTextN.ShortBar.instance{94+N*6}
+		//              path2 = SkillTextN.ShortBar.instance{94+N*6+2}
+		for (std::size_t n = 0; n < skillGroup.size(); ++n) {
+			auto avIt = avToUsage.find(skillGroup[n]);
+			if (avIt == avToUsage.end())
+				continue;
+			const auto& usage  = *avIt->second;
 			const auto& config = usage.GetConfig();
 
-			if (usage.IsDecaying()) {
-				//auto r = config.decayTint.colorData.channels.red;
-				//auto g = config.decayTint.colorData.channels.green;
-				//auto b = config.decayTint.colorData.channels.blue;
-				//auto a = config.decayTint.colorData.channels.alpha;
-				//logger::info("Applying tint to {}:", SkillName(skill));
-				//logger::info("    RGBA: ({}, {}, {}, {})", r, g, b, a);
+			const auto instanceBase = 94 + n * 6;
+			const auto path1 = std::format("_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText{}.ShortBar.instance{}", n, instanceBase);
+			const auto path2 = std::format("_root.StatsMenuBaseInstance.AnimatingSkillTextInstance.SkillText{}.ShortBar.instance{}", n, instanceBase + 2);
 
+			if (usage.IsDecaying()) {
 				if (config.decayTint.colorData.channels.alpha > 0) {
-					for (const auto& path : config.uiLayers) {
-						movie->SetColorTint(path.c_str(), config.decayTint);
-						//if (movie->SetColorTint(path.c_str(), config.decayTint)) {
-						//	logger::info("    Layer: {}", path);
-						//} else {
-						//	logger::warn("    Failed to apply tint to layer: {}", path);
-						//}
-					}
+					movie->SetColorTint(path1.c_str(), config.decayTint);
+					movie->SetColorTint(path2.c_str(), config.decayTint);
 				}
 			} else if (config.normalTint.colorData.channels.alpha > 0) {
-				for (const auto& path : config.uiLayers) {
-					movie->SetColorTint(path.c_str(), config.normalTint);
-				}
+				movie->SetColorTint(path1.c_str(), config.normalTint);
+				movie->SetColorTint(path2.c_str(), config.normalTint);
 			}
 		}
 	}
 
-	void DecayTracker::RegisterCustomSkill(const std::string& skillId, RE::ActorValueInfo* avi, RE::TESGlobal* levelGlobal, RE::TESGlobal* xpGlobal, bool xpNormalized, RE::TESGlobal* legendaryGlobal, std::map<RE::FormID, int>& raceBonuses) noexcept
+	void DecayTracker::RegisterCustomSkill(const std::string& skillId, RE::ActorValue av, RE::ActorValueInfo* avi, RE::TESGlobal* levelGlobal, RE::TESGlobal* xpGlobal, bool xpNormalized, RE::TESGlobal* legendaryGlobal, std::map<RE::FormID, int>& raceBonuses) noexcept
 	{
 		assert(!PlayerSkillData::IsDefaultSkill(skillId));
 
-		auto skill = new CustomSkillData(skillId, avi, levelGlobal, xpGlobal, xpNormalized, legendaryGlobal, raceBonuses);
+		auto skill = new CustomSkillData(skillId, av, avi, levelGlobal, xpGlobal, xpNormalized, legendaryGlobal, raceBonuses);
 		skill->UpdateRaceBonus();
 		customSkills[skillId] = skill;
+	}
+
+	void DecayTracker::UnregisterCustomSkill(const std::string& skillId) noexcept
+	{
+		auto it = customSkills.find(skillId);
+		if (it != customSkills.end()) {
+			delete it->second;
+			customSkills.erase(it);
+			customSkillUsages.erase(skillId);
+			customSkillConfigs.erase(skillId);
+		}
+	}
+
+	bool DecayTracker::IsCustomSkillRegistered(const std::string& skillId) const noexcept
+	{
+		return customSkills.find(skillId) != customSkills.end();
+	}
+
+	SkillUsage* DecayTracker::GetCustomSkillUsage(const std::string& skillId) noexcept
+	{
+		auto it = customSkillUsages.find(skillId);
+		if (it != customSkillUsages.end()) {
+			return &it->second;
+		}
+		return nullptr;
 	}
 
 	RE::BSEventNotifyControl DecayTracker::ProcessEvent(const RE::MenuOpenCloseEvent* event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*)

@@ -38,6 +38,7 @@ namespace Decay
 
 		bool RegisterCustomSkill(
 			const char*                       skillId,
+			RE::ActorValue                    av,
 			RE::ActorValueInfo*               avi,
 			RE::TESGlobal*                    levelGlobal,
 			RE::TESGlobal*                    xpGlobal,

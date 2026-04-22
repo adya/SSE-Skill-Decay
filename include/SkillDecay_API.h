@@ -102,6 +102,7 @@ namespace SkillDecay
 		/// - Skill improvement curve is derived from avi->skill->improveMult and avi->skill->improveOffset using default game formula.
 		/// </summary>
 		/// <param name="skillId">Unique identifier for the custom skill. Must not be null or empty. Must not match a default skill name.</param>
+		/// <param name="av">ActorValue associated with the custom skill</param>
 		/// <param name="avi">ActorValueInfo for the custom skill. Must not be nullptr and must have valid skill info (avi->skill != nullptr).</param>
 		/// <param name="levelGlobal">TESGlobal storing current skill level. Must not be nullptr.</param>
 		/// <param name="xpGlobal">TESGlobal storing current skill XP. Must not be nullptr.</param>
@@ -112,6 +113,7 @@ namespace SkillDecay
 		/// <returns>True if registration succeeded, otherwise false</returns>
 		virtual bool RegisterCustomSkill(
 			const char*                       skillId,
+			RE::ActorValue                    av,
 			RE::ActorValueInfo*               avi,
 			RE::TESGlobal*                    levelGlobal,
 			RE::TESGlobal*                    xpGlobal,
