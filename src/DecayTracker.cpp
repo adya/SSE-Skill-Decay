@@ -498,6 +498,7 @@ namespace Decay
 
 	constexpr std::uint32_t serializationKey = 'SKDC';
 	constexpr std::uint32_t skillUsageRecordType = 'SKUS';
+	constexpr std::uint32_t customSkillUsageRecordType = 'CSKU';
 	constexpr std::uint32_t skillUsageVersion = 1;
 
 	bool Write(SKSE::SerializationInterface* a_interface, const SkillUsage& skill)
@@ -549,21 +550,49 @@ namespace Decay
 		}
 
 		Skill skill = Skill::kOneHanded;
-		while (skill < Skill::kTotal && interface->GetNextRecordInfo(type, version, length)) {
-			switch (version) {
-			case 1:
-				if (Read(interface, tracker[skill])) {
-					logger::info("Loaded usage for {}", SkillName(skill));
-				} else {
-					tracker[skill].SetUsed(RE::Calendar::GetSingleton());
-					logger::error("Failed to load usage for {}. SkillUsage will be reset.", SkillName(skill));
+		while (interface->GetNextRecordInfo(type, version, length)) {
+			if (type == skillUsageRecordType) {
+				if (skill >= Skill::kTotal) {
+					logger::warn("More default skill records than expected, skipping.");
+					continue;
 				}
-				break;
-			default:
-				logger::error("Unsupported SkillUsage version: {} for {}. SkillUsage will be reset.", version, SkillName(skill));
-				break;
+				switch (version) {
+				case 1:
+					if (Read(interface, tracker[skill])) {
+						logger::info("Loaded usage for {}", SkillName(skill));
+					} else {
+						tracker[skill].SetUsed(RE::Calendar::GetSingleton());
+						logger::error("Failed to load usage for '{}'. SkillUsage will be reset.", SkillName(skill));
+					}
+					break;
+				default:
+					logger::error("Unsupported SkillUsage version: {} for '{}'. SkillUsage will be reset.", version, SkillName(skill));
+					break;
+				}
+				Inc(skill);
+			} else if (type == customSkillUsageRecordType) {
+				switch (version) {
+				case 1: {
+					std::string skillId;
+					SkillUsage  usage;
+					if (details::Read(interface, skillId) && Read(interface, usage)) {
+						auto customIt = tracker.customSkills.find(skillId);
+						if (customIt != tracker.customSkills.end()) {
+							tracker.customSkillUsages[skillId] = usage;
+							logger::info("Loaded usage for custom skill '{}'", skillId);
+						} else {
+							logger::info("Discarding saved usage for unregistered custom skill '{}'.", skillId);
+						}
+					} else {
+						logger::error("Failed to load usage for custom skill. Record will be skipped.");
+					}
+					break;
+				}
+				default:
+					logger::error("Unsupported custom SkillUsage version: {}. Record will be skipped.", version);
+					break;
+				}
 			}
-			Inc(skill);
 		}
 	}
 
@@ -580,9 +609,19 @@ namespace Decay
 		for (Skill skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
 			if (interface->OpenRecord(skillUsageRecordType, skillUsageVersion)) {
 				if (Write(interface, tracker[skill])) {
-					logger::info("Saved usage for {}", SkillName(skill));
+					logger::info("Saved usage for '{}'", SkillName(skill));
 				} else {
-					logger::error("Failed to save usage for {}", SkillName(skill));
+					logger::error("Failed to save usage for '{}'", SkillName(skill));
+				}
+			}
+		}
+
+		for (const auto& [skillId, usage] : tracker.customSkillUsages) {
+			if (interface->OpenRecord(customSkillUsageRecordType, skillUsageVersion)) {
+				if (details::Write(interface, skillId) && Write(interface, usage)) {
+					logger::info("Saved usage for '{}'", skillId);
+				} else {
+					logger::error("Failed to save usage for '{}'", skillId);
 				}
 			}
 		}
@@ -591,11 +630,15 @@ namespace Decay
 	void DecayTracker::Revert(SKSE::SerializationInterface*)
 	{
 		logger::info("{:*^30}", " REVERTING ");
-		GetInstance().lastDaysPassed = 0.0f;
 		auto& tracker = GetInstance();
+		tracker.lastDaysPassed = 0.0f;
 		for (Skill skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
 			tracker[skill].Revert();
-			logger::info("Reverted usage for {}", SkillName(skill));
+			logger::info("Reverted usage for '{}'", SkillName(skill));
+		}
+		for (auto& [skillId, usage] : tracker.customSkillUsages) {
+			usage.Revert();
+			logger::info("Reverted usage for '{}'", skillId);
 		}
 	}
 }
