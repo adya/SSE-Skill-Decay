@@ -136,7 +136,7 @@ namespace Decay
 				raceBonusesMap[raceBonuses[i].first] = raceBonuses[i].second;
 			}
 		}
-		
+
 		tracker.RegisterCustomSkill(
 			skillId, av, avi,
 			levelGlobal, xpGlobal, xpNormalized, legendaryGlobal,

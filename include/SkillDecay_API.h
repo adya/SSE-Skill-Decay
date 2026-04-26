@@ -13,7 +13,6 @@ namespace SkillDecay
 	class API
 	{
 	public:
-
 		/// <summary>
 		/// A shared instance that will be captured through RegisterListener call.
 		/// </summary>

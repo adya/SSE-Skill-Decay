@@ -25,19 +25,19 @@ namespace Decay
 
 	struct PartialDecayConfig
 	{
-		std::optional<float>                    gracePeriod;
-		std::optional<float>                    interval;
-		std::optional<int>                      baselineLevelOffset;
-		std::optional<int>                      levelOffset;
-		std::optional<float>                    difficultyMult;
-		std::optional<int>                      difficultyOverride;
-		std::optional<float>                    damping;
-		std::optional<float>                    legendarySkillDamping;
-		std::optional<int>                      levelCap;
-		std::optional<float>                    minDaysPerLevel;
-		std::optional<float>                    maxDaysPerLevel;
-		std::optional<RE::GColor>               decayTint;
-		std::optional<RE::GColor>               normalTint;
+		std::optional<float>      gracePeriod;
+		std::optional<float>      interval;
+		std::optional<int>        baselineLevelOffset;
+		std::optional<int>        levelOffset;
+		std::optional<float>      difficultyMult;
+		std::optional<int>        difficultyOverride;
+		std::optional<float>      damping;
+		std::optional<float>      legendarySkillDamping;
+		std::optional<int>        levelCap;
+		std::optional<float>      minDaysPerLevel;
+		std::optional<float>      maxDaysPerLevel;
+		std::optional<RE::GColor> decayTint;
+		std::optional<RE::GColor> normalTint;
 
 		void ApplyTo(DecayConfig& config) const
 		{
@@ -324,7 +324,7 @@ namespace Decay
 			auto avIt = avToUsage.find(skillGroup[n]);
 			if (avIt == avToUsage.end())
 				continue;
-			const auto& usage  = *avIt->second;
+			const auto& usage = *avIt->second;
 			const auto& config = usage.GetConfig();
 
 			const auto instanceBase = 94 + n * 6;
@@ -404,7 +404,7 @@ namespace Decay
 		}
 
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
-			auto&       usage = skillUsages[skill];
+			auto& usage = skillUsages[skill];
 
 			std::string decayStatus = "-";
 
@@ -441,9 +441,9 @@ namespace Decay
 				usage.MarkDecaying(calendar);
 				decayStatus = "-";
 			}
-			 if (logSkillUsage) {
+			if (logSkillUsage) {
 				std::string levelInfo = std::format("{:^3}[{:^2}]", usage.GetSkill()->GetLevel(), usage.GetDecayCapLevel());
-				 logger::info("[{:^13}] {} | {:^16} | {:^11} | {:^9.2f} | {:^8.2f}", timestamp, decayStatus, skillId, levelInfo, usage.GetSkill()->GetLevelThreshold(), usage.GetSkill()->GetXP());
+				logger::info("[{:^13}] {} | {:^16} | {:^11} | {:^9.2f} | {:^8.2f}", timestamp, decayStatus, skillId, levelInfo, usage.GetSkill()->GetLevelThreshold(), usage.GetSkill()->GetXP());
 			}
 		}
 
@@ -572,22 +572,23 @@ namespace Decay
 				Inc(skill);
 			} else if (type == customSkillUsageRecordType) {
 				switch (version) {
-				case 1: {
-					std::string skillId;
-					SkillUsage  usage;
-					if (details::Read(interface, skillId) && Read(interface, usage)) {
-						auto customIt = tracker.customSkills.find(skillId);
-						if (customIt != tracker.customSkills.end()) {
-							tracker.customSkillUsages[skillId] = usage;
-							logger::info("Loaded usage for custom skill '{}'", skillId);
+				case 1:
+					{
+						std::string skillId;
+						SkillUsage  usage;
+						if (details::Read(interface, skillId) && Read(interface, usage)) {
+							auto customIt = tracker.customSkills.find(skillId);
+							if (customIt != tracker.customSkills.end()) {
+								tracker.customSkillUsages[skillId] = usage;
+								logger::info("Loaded usage for custom skill '{}'", skillId);
+							} else {
+								logger::info("Discarding saved usage for unregistered custom skill '{}'.", skillId);
+							}
 						} else {
-							logger::info("Discarding saved usage for unregistered custom skill '{}'.", skillId);
+							logger::error("Failed to load usage for custom skill. Record will be skipped.");
 						}
-					} else {
-						logger::error("Failed to load usage for custom skill. Record will be skipped.");
+						break;
 					}
-					break;
-				}
 				default:
 					logger::error("Unsupported custom SkillUsage version: {}. Record will be skipped.", version);
 					break;

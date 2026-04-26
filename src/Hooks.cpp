@@ -88,13 +88,14 @@ namespace Decay
 					const std::vector<RE::ActorValue> skillGroup(menu->skillTrees.begin(), menu->skillTrees.end());
 					DecayTracker::GetInstance().ApplyTint(movie.get(), skillGroup);
 
-				RE::GFxValue root;
+					RE::GFxValue root;
 					// .AnimatingSkillTextInstance.SkillText5.ShortBar
 					if (movie->GetVariable(&root, "_root.StatsMenuBaseInstance")) {
 						if (!printed && DecayTracker::GetInstance().LogStatsMenuTree()) {
-						std::string avList;
+							std::string avList;
 							for (auto av : skillGroup) {
-								if (!avList.empty()) avList += ", ";
+								if (!avList.empty())
+									avList += ", ";
 								avList += std::to_string(static_cast<int>(av));
 							}
 							logger::info("=== StatsMenu Actor Values: [{}] ===", avList);

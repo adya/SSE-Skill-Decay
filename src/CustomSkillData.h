@@ -6,9 +6,9 @@ namespace Decay
 {
 	struct CustomSkillData : BaseSkillData
 	{
-		std::string              skillId;
-		RE::ActorValue           av;
-		RE::ActorValueInfo*      avi;
+		std::string         skillId;
+		RE::ActorValue      av;
+		RE::ActorValueInfo* avi;
 
 		RE::TESGlobal* levelGlobal;
 		RE::TESGlobal* xpGlobal;

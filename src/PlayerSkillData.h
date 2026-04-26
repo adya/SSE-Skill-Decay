@@ -11,7 +11,7 @@ namespace Decay
 			"HeavyArmor", "LightArmor", "Pickpocket", "Lockpicking",
 			"Sneak", "Alchemy", "Speech", "Alteration", "Conjuration",
 			"Destruction", "Illusion", "Restoration", "Enchanting",
-			"VampirePerks", "WerewolfPerks" // Even though Vampire and Werewolf skills are not decayable, we still consider them default skills.
+			"VampirePerks", "WerewolfPerks"  // Even though Vampire and Werewolf skills are not decayable, we still consider them default skills.
 		};
 
 		constexpr static bool IsDefaultSkill(std::string_view skillId) noexcept
