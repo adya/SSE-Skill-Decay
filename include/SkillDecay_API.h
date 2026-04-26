@@ -1,5 +1,4 @@
 #pragma once
-#include <map>
 
 namespace SkillDecay
 {
@@ -14,6 +13,12 @@ namespace SkillDecay
 	class API
 	{
 	public:
+
+		/// <summary>
+		/// A shared instance that will be captured through RegisterListener call.
+		/// </summary>
+		static inline API* instance;
+
 		/// <summary>
 		/// Checks whether the specified skill is currently decaying.
 		/// </summary>
@@ -93,7 +98,7 @@ namespace SkillDecay
 		/// OneHanded, TwoHanded, Archery, Block, Smithing, HeavyArmor, LightArmor,
 		/// Pickpocket, Lockpicking, Sneak, Alchemy, Speech, Alteration, Conjuration,
 		/// Destruction, Illusion, Restoration, Enchanting.
-		/// 
+		///
 		/// WerewolfPerks and VampirePerks are also reserved and cannot be used as skillIds.
 		///
 		/// BEHAVIOR:
@@ -139,20 +144,45 @@ namespace SkillDecay
 		virtual bool IsCustomSkillRegistered(const char* skillId) noexcept = 0;
 	};
 
-	typedef API* (*_RequestPluginAPI)(const InterfaceVersion interfaceVersion);
-
 	/// <summary>
-	/// Request the SkillDecay API interface.
-	/// Recommended: Send your request during or after SKSEMessagingInterface::kMessage_PostLoad to make sure the dll has already been loaded
+	/// Registers SKSE messaging listener to obtain the API instance from SkillDecay plugin.
+	/// The API instance is emitted by SkillDecay at kPostLoad time, so make sure to RegisterListener before that.
 	/// </summary>
-	/// <param name="a_interfaceVersion">The interface version to request</param>
-	/// <returns>The pointer to the API singleton, or nullptr if request failed</returns>
-	[[nodiscard]] inline API* RequestPluginAPI(const InterfaceVersion a_interfaceVersion = InterfaceVersion::kV1)
+	inline void RegisterListener()
 	{
-		const auto pluginHandle = GetModuleHandleA("SkillDecay.dll");
-		if (_RequestPluginAPI requestAPIFunction = (_RequestPluginAPI)GetProcAddress(pluginHandle, "RequestPluginAPI"); requestAPIFunction) {
-			return requestAPIFunction(a_interfaceVersion);
+		SKSE::GetMessagingInterface()->RegisterListener(
+			"SkillDecay",
+			[](auto msg) {
+				if (auto api = reinterpret_cast<SkillDecay::API*>(msg->data)) {
+					API::instance = api;
+					logger::info("Registered SkillDecay.");
+				}
+			});
+	}
+
+	inline bool RegisterCustomSkill(
+		const char*                       skillId,
+		RE::ActorValue                    av,
+		RE::ActorValueInfo*               avi,
+		RE::TESGlobal*                    levelGlobal,
+		RE::TESGlobal*                    xpGlobal,
+		bool                              xpNormalized,
+		RE::TESGlobal*                    legendaryGlobal,
+		const std::pair<RE::FormID, int>* raceBonuses,
+		size_t                            raceBonusesCount)
+	{
+		if (API::instance) {
+			return API::instance->RegisterCustomSkill(
+				skillId,
+				av,
+				avi,
+				levelGlobal,
+				xpGlobal,
+				xpNormalized,
+				legendaryGlobal,
+				raceBonuses,
+				raceBonusesCount);
 		}
-		return nullptr;
+		return false;
 	}
 }
