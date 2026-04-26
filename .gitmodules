@@ -6,3 +6,6 @@
 	path = extern/CommonLibSSE
 	url = https://github.com/adya/CommonLibSSE
 	branch = dev
+[submodule "extern/SKSEHooking"]
+	path = extern/SKSEHooking
+	url = https://github.com/adya/SKSEHooking.git

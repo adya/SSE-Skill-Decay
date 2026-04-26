@@ -180,6 +180,7 @@ namespace Decay
 
 	void Install()
 	{
+		SKSE::AllocTrampoline(42);
 		stl::install_hook<AdvanceTime_Main>();
 		stl::install_hook<AdvanceTime_FastTravel>();
 		stl::install_hook<AdvanceTime_Sleep>();
