@@ -4,7 +4,7 @@
   "description": "A framework that allows swapping legendary skill trees",
   "homepage": "https://github.com/adya/Skill-Decay",
   "license": "MIT",
-  "builtin-baseline": "b545373a9a536dc559dac8583467a21497a0e897",
+  "builtin-baseline": "b472291f295551b7127359ea38fdd2ca092f6f1b",
   "dependencies": [
     "boost-stl-interfaces",
     "rsm-binary-io",
