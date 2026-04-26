@@ -580,7 +580,7 @@ namespace Decay
 							auto customIt = tracker.customSkills.find(skillId);
 							if (customIt != tracker.customSkills.end()) {
 								tracker.customSkillUsages[skillId] = usage;
-								logger::info("Loaded usage for custom skill '{}'", skillId);
+								logger::info("Loaded usage for '{}'", skillId);
 							} else {
 								logger::info("Discarding saved usage for unregistered custom skill '{}'.", skillId);
 							}
