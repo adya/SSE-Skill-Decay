@@ -38,6 +38,7 @@ namespace Decay
 		std::optional<float>      maxDaysPerLevel;
 		std::optional<RE::GColor> decayTint;
 		std::optional<RE::GColor> normalTint;
+		std::optional<bool>       scaleWithTimescale;
 
 		void ApplyTo(DecayConfig& config) const
 		{
@@ -80,6 +81,9 @@ namespace Decay
 			if (normalTint.has_value()) {
 				config.normalTint = normalTint.value();
 			}
+			if (scaleWithTimescale.has_value()) {
+				config.scaleWithTimescale = scaleWithTimescale.value();
+			}
 		}
 	};
 
@@ -111,6 +115,8 @@ namespace Decay
 			config.maxDaysPerLevel = ini.GetDoubleValue(section, "fMaxDaysPerLevel");
 		if (ini.KeyExists(section, "iDifficulty"))
 			config.difficultyOverride = ini.GetLongValue(section, "iDifficulty");
+		if (ini.KeyExists(section, "bScaleWithTimescale"))
+			config.scaleWithTimescale = ini.GetBoolValue(section, "bScaleWithTimescale");
 		std::string color = ini.GetValue(section, "cDecayTint", "");
 
 		if (!color.empty()) {
@@ -155,7 +161,7 @@ namespace Decay
 	{
 		static constexpr std::string_view difficultyNames[] = { "Novice", "Apprentice", "Adept", "Expert", "Master", "Legendary" };
 
-		logger::info("{:>16} | {:^12} | {:^14} | {:^15} | {:^12} | {:^10} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
+		logger::info("{:>16} | {:^12} | {:^14} | {:^15} | {:^12} | {:^10} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14} | {:^10}",
 			skillName,
 			std::signbit(config.gracePeriod) ? "Auto" : std::format("{:.1f}h", config.gracePeriod),
 			std::format("{:.1f}h", config.interval),
@@ -167,7 +173,8 @@ namespace Decay
 			std::format("+{:.0f}%", (config.legendarySkillDamping - 1) * 100.0f),
 			config.levelCap == INT_MAX ? "Auto" : (config.levelCap == 0 ? "Current" : std::format("{}", config.levelCap)),
 			std::format("{:.1f}d", config.minDaysPerLevel),
-			std::format("{:.1f}d", config.maxDaysPerLevel));
+			std::format("{:.1f}d", config.maxDaysPerLevel),
+			config.scaleWithTimescale ? "Relative" : "Fixed");
 	}
 
 	void DecayTracker::LoadDefaultSkills()
@@ -259,8 +266,8 @@ namespace Decay
 		auto formattedRate = trackingRate < 1.0f ? std::format("{:.2f} in-game minutes", trackingRate * 60.0f) : std::format("{:.2f} in-game hours", trackingRate);
 		logger::info("Tracking Rate: once every {}", formattedRate);
 
-		logger::info("{:>16} | {:^12} | {:^14} | {:^15} | {:^12} | {:^10} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14}",
-			"Skill", "Grace Period", "Decay Duration", "Baseline Offset", "Extra Offset", "Difficulty", "Difficulty Mult", "Damping", "Legendary Damping", "Decay Cap", "Min Decay Days", "Max Decay Days");
+		logger::info("{:>16} | {:^12} | {:^14} | {:^15} | {:^12} | {:^10} | {:^15} | {:^7} | {:^17} | {:^9} | {:^14} | {:^14} | {:^10}",
+			"Skill", "Grace Period", "Decay Duration", "Baseline Offset", "Extra Offset", "Difficulty", "Difficulty Mult", "Damping", "Legendary Damping", "Decay Cap", "Min Decay Days", "Max Decay Days", "Timescale");
 		for (auto skill = Skill::kOneHanded; skill < Skill::kTotal; Inc(skill)) {
 			auto config = defaultConfigs[skill];
 			defaultConfig.ApplyTo(config);
@@ -276,8 +283,8 @@ namespace Decay
 		}
 
 		if (!configs.empty()) {
-			logger::info("{:->16} | {:-^12} | {:-^14} | {:-^15} | {:-^12} | {:-^10} | {:-^15} | {:-^7} | {:-^17} | {:-^9} | {:-^14} | {:-^14}",
-				"", "", "", "", "", "", "", "", "", "", "", "");
+			logger::info("{:->16} | {:-^12} | {:-^14} | {:-^15} | {:-^12} | {:-^10} | {:-^15} | {:-^7} | {:-^17} | {:-^9} | {:-^14} | {:-^14} | {:-^10}",
+				"", "", "", "", "", "", "", "", "", "", "", "", "");
 		}
 
 		DecayConfig empty{};

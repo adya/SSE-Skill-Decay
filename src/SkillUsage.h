@@ -72,6 +72,11 @@ namespace Decay
 		/// Provided just for fun if some people would like to recolor their skill meters.
 		RE::GColor normalTint = { 0, 0, 0, 0 };
 
+		/// When true, both the grace period and decay interval are scaled by (currentTimescale / 20)
+		/// so that decay timing feels consistent in real time regardless of the timescale setting.
+		/// The automatic grace period already accounts for timescale and is unaffected by this flag.
+		bool scaleWithTimescale = false;
+
 		DecayConfig() = default;
 		DecayConfig(float damping) :
 			damping(damping)
@@ -133,9 +138,13 @@ namespace Decay
 
 		float GetGracePeriod() const;
 
+		float GetDecayInterval() const;
+
 		float GetLegendaryMult() const;
 
 		int GetDifficulty() const;
+
+		float GetTimescaleRatio() const;
 
 		friend bool Write(SKSE::SerializationInterface*, const SkillUsage&);
 		friend bool Read(SKSE::SerializationInterface*, SkillUsage&);

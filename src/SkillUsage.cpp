@@ -106,7 +106,7 @@ namespace Decay
 		const float daysPassed = calendar->GetDaysPassed();
 		const auto  hoursPassed = (daysPassed - daysPassedSinceLastDecay) * 24.0f;
 
-		float timeDelta = hoursPassed / decay.interval;
+		float timeDelta = hoursPassed / GetDecayInterval();
 
 		float legendaryDamping = GetLegendaryMult();
 
@@ -189,6 +189,11 @@ namespace Decay
 		}
 	}
 
+	float SkillUsage::GetDecayInterval() const
+	{
+		return decay.interval * GetTimescaleRatio();
+	}
+
 	float SkillUsage::GetGracePeriod() const
 	{
 		if (std::signbit(decay.gracePeriod)) {
@@ -209,13 +214,13 @@ namespace Decay
 
 			auto diffMult = difficultyMults[GetDifficulty()];
 
-			auto gracePeriodBase = ratio * diffMult * GetLegendaryMult();
+			auto gracePeriodBase = ratio * diffMult * GetLegendaryMult() * GetTimescaleRatio();
 
 			auto days = std::pow(max(1, gracePeriodBase), 0.75f);
 
 			return max(1.0f, days) * 24.0f * GetLegendaryMult();
 		} else {
-			return decay.gracePeriod;
+			return decay.gracePeriod * GetTimescaleRatio();
 		}
 	}
 
@@ -231,6 +236,17 @@ namespace Decay
 			return decay.difficultyOverride;
 		} else {
 			return Player->difficulty;
+		}
+	}
+
+	float SkillUsage::GetTimescaleRatio() const
+	{
+		if (decay.scaleWithTimescale) {
+			constexpr float defaultTimescale = 20.0f;
+			const float     currentTimescale = RE::Calendar::GetSingleton()->GetTimescale();
+			return (currentTimescale > 0.0f) ? (currentTimescale / defaultTimescale) : 1.0f;
+		} else {
+			return 1.0f;
 		}
 	}
 
