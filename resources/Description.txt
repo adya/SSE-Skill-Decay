@@ -1,0 +1,229 @@
+[b][size=5]Intro[/size][/b]
+
+Have you ever thought that mastering all the skills and maintaining that mastery indefinitely makes those skills feel like checklist? You max out a skill and forget about it. Or you make it legendary to get Perk points back and start over. In both cases it feels static and becomes old quite fast. So here I am, presenting you [b]Skill Decay[/b]! A mod that will signify importance of practicing.
+
+
+[b][color=#b4a7d6][size=5]Overview[/size][/color][/b]
+[b]
+Skill Decay[/b] is an SKSE mod that introduces gradual decay of the skills that you haven't used for a while. The concept is simple: if you don't practice a certain skill, after a couple of in-game days it will start to slowly decay. The implementation, though, is quite sophisticated 🤓
+
+[b]Skill Decay[/b] relies on [i]Game Difficulty[/i] to determine how challenging you want it to be and adjusts various parameters accordingly. Things like duration of [i][color=#6fa8dc]Grace Period[/color][/i] (before an unused skill starts decaying), [i][color=#ffd966]rate[/color][/i] at which a skill decays, and [i][color=#93c47d]level cap[/color][/i] at which decay should stop.
+
+I'd describe each difficulty as following:
+
+[list]
+[*][b][color=#f4cccc]Novice[/color][/b]: Absolute chill gameplay, you can enjoy your weekend without worrying to lose any skills. The decay only happens over weeks. And it's quite limited so you won't lose much of a progress.[/*]
+[*][b][color=#ea9999]Apprentice[/color][/b]: Very close experience to [b][color=#f4cccc]Novice[/color][/b], however you start losing Skill XP slightly sooner and there are more skill levels to lose.[/*]
+[*][color=#e06666][b]Adept[/b] [/color]is where things start to become noticeable: up until level 50, you'll need to practice skills at least once every other day in order to avoid the decay.[/*]
+[*][color=#cc4125][b]Expert[/b] [/color]is a harsher version of [color=#e06666][b]Adept[/b][/color]; practice schedule is pretty much the same but neglecting it could cost you a substantial number of skill levels.[/*]
+[*][color=#a61c00][b]Master[/b] [/color]is when the things really get serious, higher Skill levels are not safe from decay, even though it's still decaying at a forgiving rate.[/*]
+[*][b][color=#cc0000]Legendary[/color][/b], well, is for absolute legends 😀 you are going to need to be involved in all Skills that you want to keep. There is no limit on how low the skill can drop, so neglect a skill for a month and the next time you might find it all the way back where it started.[/*]
+[/list]
+
+[quote][center][color=#f6b26b][size=2][b]NOTE[/b][/size][/color]
+While [b]Skill Decay[/b] by default uses ﻿[i]Game Difficulty[/i] that is set in the Settings,
+it can be overridden to use a different difficulty or static values.
+See [b][color=#76a5af]Customization [/color][/b]section for details.[/center]
+[/quote]
+
+When a skill starts decaying, it will be reflected in the Skills Menu - the skill's progress will appear red-ish (see screenshots), indicating that it's actively decaying.
+
+[u][b][color=#f6b26b]Neither Perks nor Character's Level are affected by the mod[/color][/b].[/u] However, since the skills will naturally drop down, you'll need to gain lost levels to be able to get new perks, gaining more XP for the Character in the process.
+
+
+[b][color=#f9cb9c][size=5]Details[/size][/color][/b]
+
+[b]Skill Decay [/b]is built around in-game clock, so any activity that takes time will contribute to the decay: sleeping, waiting, crafting, fast travelling, etc. The mod starts tracking time since each Skill was used (gained XP). Once the [color=#6fa8dc][i]Grace Period[/i][/color] passes, the Skill starts gradually losing XP in small portions controlled by [i][color=#ffd966]Decay Rate[/color][/i]. This keeps going on until the Skill reaches its [i][color=#93c47d]Decay Level Cap[/color][/i] or it gains XP from any source (trainers and skill books also count, even console commands would do!).
+
+[b][size=4][color=#6fa8dc]Grace Period[/color][/size]
+[/b]
+For each Skill the mod calculates a [i][color=#6fa8dc]Grace Period[/color][/i] when the skill is neither progressing nor decaying. The duration of this period depends on Skill Level, chosen [i]Game Difficulty[/i] and number of times the skill was made Legendary. The higher the Skill level is, the longer it takes before the skill starts decaying. The duration is then reduced by the [i]Game Difficulty[/i] multiplier. Making a skill Legendary will give a slight bonus to the [color=#6fa8dc][i]Grace Period[/i][/color] for every Legendary level.
+
+Here is a table showing approximate values of [i][color=#6fa8dc]Grace Period[/color][/i] in days at different [i]Game Difficulties[/i] and Skill levels:
+[spoiler]
+[center][img]https://raw.githubusercontent.com/adya/SSE-Skill-Decay/refs/heads/main/images/grace_periods.png[/img][/center]
+[/spoiler]
+[b][color=#ffd966][size=4]Decay Rate[/size][/color][/b]
+
+Once the [i][color=#6fa8dc]Grace Period[/color][/i] is over, a Skill starts to continuously lose XP. The amount of XP depends on [u]starting[/u] Skill levels of Character's Race. The idea is that the more natural talent your Character has the slower they'll be losing XP in this particular skill. As higher Skill levels require more XP to progress, they'll also take more time to lose 1 level. And just like with [i][color=#6fa8dc]Grace Period[/color][/i], [i]Game Difficulty[/i] multiplies Decay XP, while for every Legendary level, the Skill will become more resistant to the decay.
+
+Overall, the [i][color=#ffd966]Decay Rate[/color][/i] tries to be as intuitive as possible. When you are starting to practice a Skill and gained a couple of levels, that progress would quickly be lost if you were to stop learning. However, the more Skill you build the more resilient it becomes, the knowledge stays longer and as a result higher Skill levels take more time to decrease.
+
+Here is a table showing [color=#ffd966][i]Decay Rates[/i][/color], measured in days it takes to lose 1 level.
+[spoiler]
+[center][img]https://raw.githubusercontent.com/adya/SSE-Skill-Decay/refs/heads/main/images/decay_rates.png[/img][/center]
+[/spoiler]
+[b][color=#93c47d][size=4]Decay Level Cap[/size][/color][/b]
+
+To avoid frustrating situations where you'd lose all hard-earned progress in a Skill, the decay has a limit. Similarly to other components, [color=#93c47d][i]Level Cap[/i][/color] is calculated based on [i]Game Difficulty[/i], and by default[b][color=#6aa84f]*[/color][/b] it's relative to the highest level that you've achieved in a particular Skill. So, you won't lose more than X levels of a Skill. This represents a permanent growth of a skill, that you cannot "forget".
+
+Here is a table showing decay [color=#93c47d][i]Level Caps[/i][/color] at different Game Difficulties:
+[spoiler]
+[center][img]https://raw.githubusercontent.com/adya/SSE-Skill-Decay/refs/heads/main/images/level_caps.png[/img]
+[i][color=#cccccc]Note that [b]15[/b] in this example is the starting level of a Skill.
+So, if your Character starts with Race bonuses, then the lower limit might be higher
+(e.g. Nord would have [b]20 [/b]for Two-Handed)[/color][/i][/center]
+[/spoiler]
+[b][color=#6aa84f]*[/color][/b] - All Difficulties except Legendary use relative [i][color=#93c47d]Level Caps[/color][/i]. Legendary Difficulty, however, is set to have no cap, so skills can drop all the way back to starting levels.
+
+
+[b][color=#c27ba0][size=5]User Interface[/size][/color][/b]
+
+Lastly, [b]Skill Decay[/b] dynamically modifies UI in Skills Menu, to reflect decaying state of each Skill.
+
+[img]https://staticdelivery.nexusmods.com/mods/1704/images/170596/170596-1771361543-207683036.png[/img]
+
+[b][color=#d5a6bd][size=4]Colorful Bars[/size][/color][/b]
+
+The mod can also be used to change colors of the bars in their normal state, so you could have distinct colors for each skill:
+[spoiler]
+
+[quote][center][color=#f6b26b][size=2][b]NOTE[/b][/size][/color]
+Screenshots below are only for demonstration.
+[b] Skill Decay[/b] doesn't change default color of Skill Bars, unless it's configured to so.
+
+[color=#cccccc][size=2][i]There is an INI file in the Misc Files section that will produce the results seen on screenshots below.[/i][/size][/color][/center]
+[/quote]
+
+
+[color=#cc0000][b][size=5]Warrior[/size][/b][/color]
+
+[img]https://staticdelivery.nexusmods.com/mods/1704/images/170596/170596-1771368355-2047662659.png[/img]
+
+
+[b][color=#3c78d8][size=5]Mage[/size][/color][/b]
+
+[img]https://staticdelivery.nexusmods.com/mods/1704/images/170596/170596-1771368355-254671417.png[/img]
+
+
+[b][color=#38761d][size=5]Thief[/size][/color][/b]
+
+[img]https://staticdelivery.nexusmods.com/mods/1704/images/170596/170596-1771368356-1091324828.png[/img][/spoiler]
+
+[b][color=#76a5af][size=5]Customization[/size][/color][/b]
+
+Every aspect of the mod can be customized however you see fit. Options can be provided in any number of [i].ini[/i] files placed under [i]Data/SKSE/Plugins/SkillDecay/[/i] (all matching INIs in that folder are merged together). A single legacy file at [i]Data/SKSE/Plugins/SkillDecay.ini[/i] is also still supported as a fallback.
+
+Once edited, the settings will be read the next time you load a save (or launch the game). So quick save and reload should work.
+
+[b][color=#a2c4c9][size=4]Options[/size][/color][/b]
+
+List of all available options:
+[spoiler]
+[code]﻿; Override Game Difficulty. This will make affected skills auto-scale with a fixed difficulty specified here.
+; 0 - Novice, 1 - Apprentice, 2 - Adept, 3 - Expert, 4 - Master, 5 - Legendary.
+iDifficulty = 0
+
+; A flat time interval in in-game hours that should be set as Grace Period for affected skills.
+; Note, specifying a value here will disable auto-scaling of this parameter with Difficulty.
+fDecayGracePeriod = 24.0
+
+; A damping multiplier applied to the Decay XP. Used together with fDifficultyMult to calculate how much Decay XP should be subtracted in a day.
+; This value is useful to make specific skills decay slower (damping > 1) or faster (0 < damping < 1)
+fDecayXPDamping = 1.0
+
+; A flat multiplier to the XP decay rate. Used together with fDecayXPDamping to calculate how much Decay XP should be subtracted in a day.
+; Note, specifying a value here will disable auto-scaling of this parameter with Difficulty.
+fDecayXPDifficultyMult = 1.0
+
+; Limits how low can a skill decay.
+; Positive values represent absolute level caps (e.g. iDecayLevelCap = 50 means that skill can't fall below 50)
+; Negative values represent relative level caps (e.g. iDecayLevelCap = -20 means that skill can't drop for more than 20 levels from the highest level it ever was)
+iDecayLevelCap = 0
+
+; Additional damping multiplier that is accumulated for each Legendary level of a skill.
+; This is used to control both Decay XP and Grace Period.
+; Multiplier should be written in form of (1 + mult), so 1.15 means that every Legendary level adds 15% to the damping.
+fLegendarySkillXPDamping = 1.15
+
+; The smallest number of days it should take to decay a skill by 1 level.
+; This value clamps maximum Decay XP to prevent rapid decays on smaller levels.
+fMinDaysPerLevel = 1
+
+; The largest number of days it should take to decay a skill by 1 level.
+; This value clamps minimum allowed Decay XP to prevent too slow decays on higher levels.
+fMaxDaysPerLevel = 10
+
+; Color of the tint that will be applied to Progress Bar of a decaying skill.
+; Written in RGBA format, with acceptable values in 0-255 range.
+; If Alpha is 0, no tint will be applied.
+cDecayTint = 255,60,0,200
+
+; Color of the tint that will be applied to Progress Bar of a normal skill.
+; Written in RGBA format, with acceptable values in 0-255 range.
+; If Alpha is 0, no tint will be applied.
+; This is the option that can be used to customize colors of all the bars.
+cTint = 255,255,255,0
+
+; List of UI layers/objects to be tinted
+; This is mostly for compatibility with any potential mods that change Skills Menu. Don't worry about it.
+sUILayers = path.to.flash.object1, path.to.flash.object2[/code]
+[/spoiler]
+[b][color=#a2c4c9][size=4]Categories[/size][/color][/b]
+
+All of the options can be applied in one or more categories. There are 3 categories:
+
+[b][color=#d0e0e3][size=3]Default parameters for all skills[/size][/color]
+[/b][i][color=#cccccc][size=2]These are options that all skills will use, unless you provide a section specific to a Skill.[/size][/color]
+[/i]
+Options in this category are written as is. Ideally at the top of the file:
+
+[code]fGracePeriod = 72.0[/code]
+
+
+Makes all skill default to 72 hours of [i][color=#6fa8dc]Grace Period[/color][/i], unless other categories override it.
+
+[b][size=3][color=#d0e0e3]Specific parameters for individual skills[/color][/size]
+[/b][i][color=#cccccc][size=2]These are options that will be applied to a single skill for which they are defined.[/size][/color][/i]
+
+Options in this category are written under a section with Skill name:
+
+[code]﻿[OneHanded]
+fGracePeriod = 24.0[/code]
+
+Makes One-Handed skill ignore the default 72 hours of [color=#6fa8dc][i]Grace Period[/i][/color] and use 24 hours instead.
+
+A list of skill names:
+[spoiler]
+[code]OneHanded
+TwoHanded
+Archery
+Block
+Smithing
+HeavyArmor
+LightArmor
+Pickpocket
+Lockpicking
+Sneaking
+Alchemy
+Speech
+Alteration
+Conjuration
+Destruction
+Illusion
+Restoration
+Enchanting[/code]
+[/spoiler]
+
+[color=#d0e0e3][size=3][b]Global parameters for all skills[/b][/size][/color]
+[color=#cccccc][size=2][i]These are options that will overwrite both defaults and individual skill options.[/i][/size][/color]
+
+Options in this category are written under a section [All]:
+
+[code]﻿[All]
+fGracePeriod = 100.0[/code]
+
+Overrides all other options for [i][color=#6fa8dc]Grace Period[/color][/i] and sets it to 100 hours.
+
+
+[color=#45818e][size=5][b]Source[/b][/size][/color]
+
+[list]
+[*][url=https://github.com/adya/SSE-Skill-Decay]GitHub[/url]﻿[/*]
+[/list]
+
+[color=#3c78d8][size=5][b]Support[/b][/size][/color]
+
+Thank you for using my mods! If you enjoy them and would like to support me, you can use the links below. ﻿[url=https://www.flaticon.com/search?author_id=353&style_id=&type=standard&word=cat][img]https://i.imgur.com/1roacCR.png[/img]
+[/url]
+[i][size=6][color=#ffff00][url=https://patreon.com/Arkhlus?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=creatorshare_creator&utm_cjavascript-event-strippedjoin_link][img]https://i.imgur.com/tkWIT9M.gif[/img][/url][/color][/size][/i]
