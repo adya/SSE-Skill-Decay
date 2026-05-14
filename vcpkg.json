@@ -1,6 +1,6 @@
 {
   "name": "skill-decay",
-  "version-string": "2.0.0",
+  "version-string": "2.1.0",
   "description": "A framework that allows swapping legendary skill trees",
   "homepage": "https://github.com/adya/Skill-Decay",
   "license": "MIT",
